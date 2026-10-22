@@ -123,6 +123,8 @@ def render_disease_guide():
     for i, (title, body) in enumerate(DISEASE_STEPS):
         with st.expander(title, expanded=i == 0):
             st.markdown(body)
+            from src.case_companion import render_case_step
+            render_case_step("disease", i)
     st.subheader("疾病资料工作表与字段")
     for filename, fields in DISEASE_TABLES.items():
         with st.expander(filename):

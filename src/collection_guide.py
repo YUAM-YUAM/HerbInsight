@@ -171,6 +171,8 @@ def render_collection_guide():
             st.success("应保存/交付：" + step["save"])
             st.warning(step["check"])
             st.caption("下方表格规范对应文件：" + step["table"])
+            from src.case_companion import render_case_step
+            render_case_step("collection", index)
     st.subheader("最终表格长什么样？")
     st.warning("以下示例只展示填写格式，使用虚构编号与占位关系；空白表示尚未获得信息。不要当作可运行数据或真实药材靶点证据。CSV保存为UTF-8，日期YYYY-MM-DD，ID按文本保存，一格一个值、不合并单元格。")
     for filename, grain, fields in TABLE_SCHEMAS:

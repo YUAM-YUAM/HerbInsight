@@ -119,6 +119,8 @@ def render_ppi_guide(practice=None):
     for i, (title, body) in enumerate(PPI_STEPS):
         with st.expander(title, expanded=i == 0):
             st.markdown(body)
+            from src.case_companion import render_case_step
+            render_case_step("ppi", i)
             if i == 6 and practice is not None:
                 practice()
     st.subheader("文件交接与空白模板")

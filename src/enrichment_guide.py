@@ -124,6 +124,8 @@ def render_enrichment_guide(practice=None):
     for i, (title, body) in enumerate(ENRICHMENT_STEPS):
         with st.expander(title, expanded=i == 0):
             st.markdown(body)
+            from src.case_companion import render_case_step
+            render_case_step("enrichment", i)
             if i == 5 and practice is not None:
                 practice()
     st.subheader("输入表字段与空白模板")

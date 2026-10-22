@@ -139,6 +139,8 @@ def render_transcriptome_guide():
     for i, (title, body) in enumerate(TRANSCRIPTOME_STEPS):
         with st.expander(title, expanded=i == 0):
             st.markdown(body)
+            from src.case_companion import render_case_step
+            render_case_step("transcriptome", i)
             if i == 4:
                 from src.expression_workspace import render_expression_analysis
                 render_expression_analysis()
