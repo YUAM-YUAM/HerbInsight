@@ -34,4 +34,7 @@ projects/demo_project/
 *.log
 *.tmp
 *.temp
+validation/gse38713/*_all_results.csv
+validation/gse38713/probe_mapping_audit.csv
+validation/gse38713/sample_audit.csv
 ~$*

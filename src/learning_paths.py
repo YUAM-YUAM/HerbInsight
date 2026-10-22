@@ -10,6 +10,7 @@ from src.advanced_guides import advanced_markdown, render_advanced_course
 from src.course_delivery import capability_markdown, render_delivery
 from src.learning_exercises import render_exercise, render_learning_record
 from src.first_experiment import render_first_experiment
+from src.published_validation import render_published_validation
 
 RESOURCES = [
     ("TCMSP", "https://tcmsp-e.com/", "药材、成分、ADME与靶点线索", "历史常用资源；可用性、下载与授权以站点为准"),
@@ -244,7 +245,7 @@ def render_course_resources():
     import streamlit as st
     from pathlib import Path
     with st.expander("作品验证与演示材料（不增加学习步骤）"):
-        st.write("自动化检查验证软件行为，不证明教学效果或临床有效性。真人试用和真实数据独立复核尚需按协议完成，不能以演示结果代替。")
+        st.write("自动化检查验证软件行为，不证明教学效果或临床有效性。已完成GSE38713探索性再分析与论文摘要对照，见转录组课程；独立队列验证、全文严格复现及真人试用尚未完成。")
         docs = Path(__file__).resolve().parents[1] / "docs"
         for filename, label in [("reviewer_walkthrough.md", "评审演示与能力边界"), ("pilot_protocol.md", "初学者试用任务与空白记录"), ("validation_protocol.md", "真实数据复核方案"), ("contribution_disclosure.md", "原创贡献与AI使用披露模板")]:
             st.download_button("下载" + label, (docs / filename).read_bytes(), filename, "text/markdown", key="artifact_" + filename)
@@ -280,6 +281,8 @@ def page_learning_paths(cfg, project_id, section="overview", practice=None):
     import streamlit as st
     section = section if section in SECTION_TITLES else "overview"
     st.header(SECTION_TITLES[section])
+    if section == "transcriptome":
+        render_published_validation()
     render_exercise(section)
     renderers = {
         "overview": render_course_overview, "collection": render_collection_guide,

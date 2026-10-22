@@ -1,0 +1,43 @@
+{
+  "dataset": "GSE38713",
+  "paper_pmid": "23135761",
+  "comparison_scope": "Abstract-named genes; exploratory reanalysis, not independent cohort validation",
+  "paper_genes_fixed_before_analysis": [
+    "REG4",
+    "S100P",
+    "SERPINB5",
+    "SLC16A1",
+    "DEFB1",
+    "AQP3",
+    "AQP8",
+    "REG1A",
+    "CXCL8"
+  ],
+  "input_probes": 54675,
+  "included_probes": 20082,
+  "tested_genes": 11753,
+  "preprocessing": "Depositor GC-RMA log2 values, no second log transform; max across all43 >=5; exclude empty/multi-symbol probes; median of log2 probes per gene",
+  "platform_annotation_header": "^Annotation\n!Annotation_date = Aug 09 2016\n!Annotation_platform = GPL570\n!Annotation_platform_title = [HG-U133_Plus_2] Affymetrix Human Genome U133 Plus 2.0 Array\n!Annotation_platform_organism = Homo sapiens\n#ID = ID from Platform data table\n#Gene title = Entrez Gene name\n#Gene symbol = Entrez Gene symbol\n#Gene ID = Entrez Gene identifier\n#UniGene title = Entrez UniGene name\n#UniGene symbol = Entrez UniGene symbol\n#UniGene ID = Entrez UniGene identifier\n#Nucleotide Title = Entrez Nucleotide title\n#GI = GenBank identifier\n#GenBank Accession = GenBank accession\n#Platform_CLONEID = CLONE_ID from Platform data table\n#Platform_ORF = ORF from Platform data table\n#Platform_SPOTID = SPOT_ID from Platform data table\n#Chromosome location = Entrez gene chromosome and location\n#Chromosome annotation = Entrez gene chromosome annotation\n#GO:Function = Gene Ontology Function term\n#GO:Process = Gene Ontology Process term\n#GO:Component = Gene Ontology Component term\n#GO:Function ID = Gene Ontology Function identifier\n#GO:Process ID = Gene Ontology Process identifier\n#GO:Component ID = Gene Ontology Component identifier\n",
+  "groups": {
+    "active": 15,
+    "control": 13,
+    "excluded_noninvolved": 7,
+    "remission": 8
+  },
+  "comparisons": {
+    "remission": {
+      "n_control": 13,
+      "n_case": 8,
+      "fdr_significant": 4822,
+      "max_formula_p_error": 6.662559393078027e-12,
+      "max_formula_bh_error": 6.6626704153804894e-12
+    },
+    "active": {
+      "n_control": 13,
+      "n_case": 15,
+      "fdr_significant": 6259,
+      "max_formula_p_error": 1.1113332476497817e-12,
+      "max_formula_bh_error": 1.1113332476497817e-12
+    }
+  }
+}

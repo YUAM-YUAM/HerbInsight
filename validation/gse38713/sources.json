@@ -1,0 +1,23 @@
+{
+  "retrieved_utc": "2026-10-22T18:04:09.050752+00:00",
+  "files": [
+    {
+      "file": "series_matrix.txt.gz",
+      "url": "https://ftp.ncbi.nlm.nih.gov/geo/series/GSE38nnn/GSE38713/matrix/GSE38713_series_matrix.txt.gz",
+      "sha256": "9713a50fd2d7b19dec12355f0208a09bb82321c50de92fc25d26ec51285e5b08",
+      "bytes": 12860130
+    },
+    {
+      "file": "platform.annot.gz",
+      "url": "https://ftp.ncbi.nlm.nih.gov/geo/platforms/GPLnnn/GPL570/annot/GPL570.annot.gz",
+      "sha256": "d7cd44352127b1e34f3a720ebea86093ef255a38f1612a85a2962b71bde8f394",
+      "bytes": 8471521
+    },
+    {
+      "file": "paper.json",
+      "url": "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=EXT_ID:23135761%20AND%20SRC:MED&format=json&resultType=core",
+      "sha256": "27157abac494718229b694915f349958530f1e8904a891567f228deb1d1a0266",
+      "bytes": 8670
+    }
+  ]
+}

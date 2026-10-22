@@ -1,0 +1,24 @@
+{
+  "method": "Welch differential expression",
+  "parameters": {
+    "case": "active",
+    "control": "control",
+    "method": "independent two-sided Welch",
+    "correction": "BH over all tested genes",
+    "probe_aggregation": "median of log2 values",
+    "threshold": "BH<0.05; no effect size cutoff in paper-gene comparison"
+  },
+  "input_sha256": "bd1a8979a5c15ec6eb43f296dee13fc8f0db9d16235c7056162ed9b048ff4fe0",
+  "source": "GEO GSE38713 processed series matrix; GPL570 annotation",
+  "created_utc": "2026-10-22T18:04:13.396030+00:00",
+  "python": "3.12.10",
+  "versions": {
+    "pandas": "3.0.6",
+    "numpy": "2.5.3",
+    "scipy": "1.18.1",
+    "streamlit": "1.65.0"
+  },
+  "independent_formula_max_p_error": 1.1113332476497817e-12,
+  "independent_formula_max_bh_error": 1.1113332476497817e-12,
+  "confidence_interval": "Pointwise Welch 95% CI for mean log2 difference, not simultaneous or equivalence intervals"
+}
