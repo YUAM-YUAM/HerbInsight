@@ -1,0 +1,16 @@
+﻿Algorithm,evaluation_set,AUC
+LASSO-Logistic,Training,1.0
+SVM-RBF,Training,1.0
+Random Forest,Training,1.0
+XGBoost,Training,1.0
+ElasticNet,Training,1.0
+LASSO-Logistic,Internal validation,1.0
+SVM-RBF,Internal validation,1.0
+Random Forest,Internal validation,1.0
+XGBoost,Internal validation,1.0
+ElasticNet,Internal validation,1.0
+LASSO-Logistic,External GSE38713,1.0
+SVM-RBF,External GSE38713,1.0
+Random Forest,External GSE38713,1.0
+XGBoost,External GSE38713,1.0
+ElasticNet,External GSE38713,0.8461538461538461

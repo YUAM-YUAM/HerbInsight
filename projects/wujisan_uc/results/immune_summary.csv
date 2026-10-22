@@ -1,0 +1,12 @@
+﻿metric,value
+sample_count,28.0
+control_samples,13.0
+uc_samples,15.0
+immune_cell_count,28.0
+significant_immune_cells,20.0
+significant_higher_in_uc,10.0
+significant_lower_in_uc,10.0
+candidate_gene_count,56.0
+significant_gene_cell_correlations,849.0
+pca_pc1_explained_percent,40.74673057043942
+pca_pc2_explained_percent,15.357730741854658

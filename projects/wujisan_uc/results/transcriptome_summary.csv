@@ -1,0 +1,12 @@
+﻿metric,value
+dataset,GSE38713
+comparison,UC vs Control
+control_samples,13
+uc_samples,15
+expression_genes,16100
+significant_degs,3958
+upregulated_genes,2260
+downregulated_genes,1698
+network_supported_degs,73
+fdr_threshold,0.05
+absolute_logfc_threshold,0.58

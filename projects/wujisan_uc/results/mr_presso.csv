@@ -1,0 +1,4 @@
+﻿gene_symbol,global_test_p_value_raw,outlier_count,original_beta,original_p_value,global_test_p_value,global_test_significant,presso_interpretation
+IRF1,1,0,,,1.0,False,No MR-PRESSO global concern detected
+CTSB,1,0,,,1.0,False,No MR-PRESSO global concern detected
+CXCL1,<0.000164744645799012,12,,,0.000164744645799,True,Potential horizontal pleiotropy or outlier concern

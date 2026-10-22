@@ -1,0 +1,11 @@
+﻿metric,value
+total_integrated_genes,191
+network_supported_genes,191
+transcriptome_supported_genes,73
+machine_learning_supported_genes,56
+mr_analyzed_genes,6
+mr_fdr_supported_genes,3
+immune_supported_genes,56
+priority_a_genes,56
+top_10_genes,IRF1；SERPINA1；CTSB；STAT3；TGFB1；IL1B；HIF1A；MMP9；CCL2；TLR4
+methodological_note,证据层数表示不同分析模块的支持类别数量，不代表相互独立的重复验证，也不直接代表因果关系。

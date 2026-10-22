@@ -1,0 +1,11 @@
+﻿Algorithm,Accuracy,AUC_ROC,Sensitivity,Specificity,Precision,Recall,F1,MCC,evaluation_set
+ElasticNet,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,Internal validation
+Random Forest,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,Internal validation
+XGBoost,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,Internal validation
+LASSO-Logistic,0.9743589743589745,1.0,0.9696969696969696,1.0,1.0,0.9696969696969696,0.9846153846153848,0.9116846116771036,Internal validation
+SVM-RBF,0.8461538461538461,1.0,1.0,0.0,0.8461538461538461,1.0,0.9166666666666666,0.0,Internal validation
+ElasticNet,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,Training
+Random Forest,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,Training
+XGBoost,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,Training
+LASSO-Logistic,0.9805194805194806,1.0,0.9765625,1.0,1.0,0.9765625,0.9881422924901184,0.935702299400535,Training
+SVM-RBF,0.8311688311688312,1.0,1.0,0.0,0.8311688311688312,1.0,0.9078014184397164,0.0,Training

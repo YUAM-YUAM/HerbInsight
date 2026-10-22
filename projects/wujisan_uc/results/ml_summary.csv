@@ -1,0 +1,7 @@
+﻿metric,value
+model_count,5
+best_external_auc,1.0
+best_external_models,LASSO-Logistic；SVM-RBF；Random Forest；XGBoost
+feature_records,224
+multi_model_features,56
+quality_flag_count,10

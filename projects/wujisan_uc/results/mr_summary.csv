@@ -1,0 +1,8 @@
+﻿metric,value
+analyzed_genes,6
+full_snp_nominal_significant,4
+full_snp_fdr_significant,3
+top50_nominal_significant,5
+direction_consistent_genes,5
+pleiotropy_concerns,5
+presso_global_concerns,1

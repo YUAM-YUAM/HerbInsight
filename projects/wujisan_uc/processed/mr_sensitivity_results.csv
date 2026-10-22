@@ -1,0 +1,7 @@
+﻿gene_symbol,ivw_q_statistic,heterogeneity_p_value,egger_intercept,pleiotropy_p_value,heterogeneity_flag,pleiotropy_flag,quality_status
+CASP1,376.240072800725,1.0,-0.0046391912673166,0.0410978492360722,False,True,Horizontal pleiotropy concern
+COL1A1,4.43650308819221,0.488423791258269,-0.146232666057368,0.213309841923279,False,False,No statistical concern detected
+CTSB,1230.13868440145,1.0,0.0084491778767663,5.10634103864388e-16,False,True,Horizontal pleiotropy concern
+CXCL1,2037.17849685072,5.7033832810831504e-154,-0.0557406278681901,2.97292475137784e-18,True,True,Horizontal pleiotropy concern
+IRF1,88.2681253925598,0.999999999999928,-0.0385575596078498,3.70715859231493e-05,False,True,Horizontal pleiotropy concern
+SERPINA1,580.157484442107,0.490347069149673,0.0043706329862356,0.0136020174369833,False,True,Horizontal pleiotropy concern

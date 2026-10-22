@@ -1,0 +1,11 @@
+﻿Algorithm,issue_type,severity,description
+ElasticNet,Perfect internal AUC,Medium,内部验证AUC接近或等于1.0，需要进一步排查过拟合和数据泄漏。
+Random Forest,Perfect internal AUC,Medium,内部验证AUC接近或等于1.0，需要进一步排查过拟合和数据泄漏。
+XGBoost,Perfect internal AUC,Medium,内部验证AUC接近或等于1.0，需要进一步排查过拟合和数据泄漏。
+LASSO-Logistic,Perfect internal AUC,Medium,内部验证AUC接近或等于1.0，需要进一步排查过拟合和数据泄漏。
+SVM-RBF,Threshold performance,High,内部验证特异度接近0，说明当前分类阈值可能无法正确识别对照样本。
+SVM-RBF,Perfect internal AUC,Medium,内部验证AUC接近或等于1.0，需要进一步排查过拟合和数据泄漏。
+LASSO-Logistic,Perfect external AUC,Medium,外部验证AUC等于1.0，建议使用更多独立队列进行复现。
+SVM-RBF,Perfect external AUC,Medium,外部验证AUC等于1.0，建议使用更多独立队列进行复现。
+Random Forest,Perfect external AUC,Medium,外部验证AUC等于1.0，建议使用更多独立队列进行复现。
+XGBoost,Perfect external AUC,Medium,外部验证AUC等于1.0，建议使用更多独立队列进行复现。

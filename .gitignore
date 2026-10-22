@@ -1,0 +1,37 @@
+# Python 虚拟环境
+.venv/
+venv/
+env/
+
+# Python 缓存
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# 开发工具
+.vscode/
+.idea/
+
+# 操作系统临时文件
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Streamlit 本地敏感配置
+.streamlit/secrets.toml
+
+# 原始大数据不上传
+projects/*/raw/
+
+# 本地备份不上传
+backups/
+
+# 临时测试项目不上传
+projects/demo_project/
+
+# 日志和临时文件
+*.log
+*.tmp
+*.temp
+~$*

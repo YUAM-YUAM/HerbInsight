@@ -1,0 +1,67 @@
+# 五积散 - 溃疡性结肠炎 项目配置
+# 本项目为"HerbInsight 通用框架"下的第一个示范项目。
+# 新增项目时复制本目录并修改本文件即可。
+project_id: wujisan_uc
+project_name: 五积散干预溃疡性结肠炎
+formula_name: 五积散
+disease_name: 溃疡性结肠炎
+species: Homo sapiens
+version: "1.0"
+created_date: 2026-10-10
+
+# 平台需要加载的模块（按需启用/停用）
+modules:
+  - herbs                # 药材-成分-靶点
+  - target_overlap       # 疾病基因与交集
+  - ppi                  # 网络药理学/PPI
+  - enrichment           # GO/KEGG 富集
+  - transcriptome        # 转录组验证
+  - machine_learning     # 机器学习
+  - mendelian_randomization  # 孟德尔随机化
+  - immune_infiltration  # 免疫浸润
+  - integrated_evidence  # 综合证据整合
+  - cell_communication   # 细胞通讯
+  - virtual_knockout     # 虚拟敲除
+
+# 各模块数据文件（统一放在 processed/ 或 results/ 下）
+data_files:
+  herbs: processed/herbs.csv
+  compound_targets: processed/compound_targets.csv
+  disease_genes: processed/disease_genes.csv
+  target_overlap: processed/target_overlap.csv
+  ppi_nodes: processed/ppi_nodes.csv
+  ppi_edges: processed/ppi_edges.csv
+  go_enrichment: results/go_enrichment.csv
+  kegg_enrichment: results/kegg_enrichment.csv
+
+  deg_results: processed/transcriptome_degs.csv
+  transcriptome_samples: processed/transcriptome_samples.csv
+  transcriptome_target_overlap: processed/transcriptome_target_overlap.csv
+  transcriptome_summary: results/transcriptome_summary.csv
+
+  ml_metrics: results/ml_metrics.csv
+  ml_auc: results/ml_auc.csv
+  ml_features: processed/ml_feature_importance.csv
+  ml_feature_consensus: processed/ml_feature_consensus.csv
+  ml_quality_flags: results/ml_quality_flags.csv
+  ml_summary: results/ml_summary.csv
+  mr_results: results/mr_results.csv
+  mr_method_results: processed/mr_method_results.csv
+  mr_sensitivity: processed/mr_sensitivity_results.csv
+  mr_strategy_comparison: processed/mr_strategy_comparison.csv
+  mr_presso: results/mr_presso.csv
+  mr_evidence_summary: results/mr_evidence_summary.csv
+  mr_summary: results/mr_summary.csv
+
+  immune_scores: processed/immune_scores.csv
+  immune_scores_long: processed/immune_scores_long.csv
+  immune_group_statistics: results/immune_group_statistics.csv
+  immune_cell_correlations: results/immune_cell_correlations.csv
+  immune_pca: results/immune_pca.csv
+  immune_gene_correlations: results/immune_gene_correlations.csv
+  immune_summary: results/immune_summary.csv
+
+  integrated_evidence_matrix: results/integrated_evidence_matrix.csv
+  integrated_evidence_summary: results/integrated_evidence_summary.csv
+# 研究声明（平台统一展示）
+disclaimer: 本系统用于科研辅助和教育展示，不用于临床诊断、治疗决策或未经验证的疗效宣传。
