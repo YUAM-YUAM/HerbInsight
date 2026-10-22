@@ -3,9 +3,33 @@
 from __future__ import annotations
 
 from io import BytesIO
+import math
 
 import networkx as nx
 import pandas as pd
+
+
+def map_edge_columns(data, source_column, target_column, weight_column=None, score_scale="original"):
+    """显式映射任意导出列；不猜测分数尺度或ID体系。"""
+    if source_column == target_column:
+        raise ValueError("起点与终点必须选择不同列。")
+    selected = [source_column, target_column] + ([weight_column] if weight_column else [])
+    if len(set(selected)) != len(selected) or any(c not in data.columns for c in selected):
+        raise ValueError("请选择不同且存在的端点与权重列。")
+    mapped = data.drop(columns=list(set(selected) | {"source", "target", "weight"}), errors="ignore").copy()
+    mapped["source"] = data[source_column]
+    mapped["target"] = data[target_column]
+    mapped["weight"] = pd.to_numeric(data[weight_column], errors="coerce") if weight_column else 1.0
+    if score_scale == "string_1000":
+        if not weight_column:
+            raise ValueError("转换STRING分数前必须选择分数列。")
+        scores = mapped["weight"]
+        if scores.isna().any() or not scores.between(0, 1000).all():
+            raise ValueError("STRING 0–1000分数必须全部为该范围内的有限数值。")
+        mapped["weight"] = scores / 1000.0
+    elif score_scale != "original":
+        raise ValueError("未知的分数尺度。")
+    return mapped
 
 
 def read_edge_table(uploaded_file) -> pd.DataFrame:
@@ -40,6 +64,7 @@ def validate_edges(data: pd.DataFrame) -> pd.DataFrame:
     if missing:
         raise ValueError("边表缺少必要字段：" + "、".join(sorted(missing)))
 
+    cleaned = cleaned.dropna(subset=["source", "target"]).copy()
     cleaned["source"] = cleaned["source"].astype(str).str.strip()
     cleaned["target"] = cleaned["target"].astype(str).str.strip()
     if "weight" not in cleaned.columns:
@@ -55,6 +80,7 @@ def validate_edges(data: pd.DataFrame) -> pd.DataFrame:
         (cleaned["source"] != "")
         & (cleaned["target"] != "")
         & cleaned["weight"].notna()
+        & cleaned["weight"].map(math.isfinite)
     ].reset_index(drop=True)
 
 
@@ -69,6 +95,8 @@ def analyze_network(
     filtered = validated[validated["weight"] >= minimum_weight].copy()
     self_loop_count = int((filtered["source"] == filtered["target"]).sum())
     filtered = filtered[filtered["source"] != filtered["target"]].copy()
+    if filtered.empty:
+        raise ValueError("当前阈值下没有可用于建网的边。")
 
     type_lookup = {}
     for _, row in filtered.iterrows():
@@ -77,12 +105,9 @@ def analyze_network(
 
     pair_columns = ["source", "target"]
     if not directed:
-        normalized_pairs = filtered[pair_columns].apply(
-            lambda row: sorted([row["source"], row["target"]]), axis=1,
-            result_type="expand",
-        )
-        filtered["source"] = normalized_pairs[0]
-        filtered["target"] = normalized_pairs[1]
+        reverse = filtered["source"] > filtered["target"]
+        for first, second in [("source", "target"), ("source_type", "target_type")]:
+            filtered.loc[reverse, [first, second]] = filtered.loc[reverse, [second, first]].to_numpy()
 
     duplicate_count = int(filtered.duplicated(pair_columns).sum())
     filtered = (
@@ -92,6 +117,8 @@ def analyze_network(
     )
     if filtered.empty:
         raise ValueError("当前阈值下没有可用于建网的边。")
+    if len(filtered) > 5000 or len(set(filtered["source"]) | set(filtered["target"])) > 500:
+        raise ValueError("教学在线计算限500节点、5000条去重边；更大网络请用Cytoscape或本地脚本。")
 
     graph = nx.DiGraph() if directed else nx.Graph()
     for _, row in filtered.iterrows():

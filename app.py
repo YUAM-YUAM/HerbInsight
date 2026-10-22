@@ -26,7 +26,9 @@ from src.enrichment_engine import (
     run_over_representation,
     split_gene_text,
 )
-from src.network_engine import analyze_network, example_edge_file, read_edge_table
+from src.network_engine import analyze_network, example_edge_file, read_edge_table, map_edge_columns
+from src.learning_paths import page_learning_paths
+from src.navigation import NAV_GROUPS, ROUTES, resolve_route, course_neighbors
 
 # ---------------------------------------------------------------------------
 # 全局配置
@@ -123,22 +125,22 @@ def page_learning_center(cfg, project_id):
     st.header("教学实训中心")
     st.write(
         "从数据库检索开始，沿着标准科研流程边学边做。"
-        "每个实验都包含原理、数据模板、参数解释、现场计算、"
-        "结果解读和可下载的实验记录。"
+        "课程包括原理、资料模板、传统工具路线、参数与解释边界；"
+        "现场计算、固定示意与尚未开放功能分别标注。"
     )
 
-    st.progress(2 / 11)
-    st.caption("在线实验建设进度：已开放 2 个真实计算实验，其余模块按路线逐步接入。")
+    st.caption("通用上传计算：网络边表分析、自备注释ORA；另有粘贴清单交集和多种固定教学演示。课程开放不等于算法上线，不使用课程数量推算算法完成比例。")
+    st.info("从左侧「核心学习与实训」开始：先完成核心流程，再在「进阶证据」选择转录组、机器学习、免疫、MR或单细胞/扰动分支；最后进入「项目工具 → 资料模板与交付自查」。")
 
     stages = [
-        ("1", "药材与成分收集", "记录数据库、版本、检索日期和筛选标准", "教学指南", "建设中"),
-        ("2", "靶点标准化", "统一物种、UniProt ID 与基因符号并检查重复值", "数据治理", "建设中"),
-        ("3", "疾病基因与交集", "整合 GeneCards、DisGeNET、OMIM 等多来源证据", "集合运算", "建设中"),
+        ("1", "药材与成分收集", "记录数据库、版本、检索日期和筛选标准", "教学指南", "操作课程已开放"),
+        ("2", "靶点标准化", "统一物种、UniProt ID 与基因符号并检查重复值", "数据治理", "操作课程已开放"),
+        ("3", "疾病基因与交集", "整合 GeneCards、DisGeNET、OMIM 等多来源证据", "集合运算", "操作课程已开放"),
         ("4", "网络药理学", "构建药材—成分—靶点网络并计算拓扑指标", "真实计算", "已开放"),
         ("5", "GO/KEGG 富集", "理解超几何检验、背景集与 FDR，上传数据现场计算", "真实计算", "已开放"),
-        ("6", "机器学习", "规范划分训练/测试集，避免过拟合与数据泄漏", "真实计算", "计划中"),
-        ("7", "孟德尔随机化", "完成等位基因协调、IVW及敏感性分析", "真实计算", "计划中"),
-        ("8", "免疫微环境证据", "估计免疫细胞相对富集并关联候选基因", "证据扩展", "已有案例"),
+        ("6", "机器学习", "训练内筛选、交叉验证与内部保留测试集", "真实计算", "逻辑回归、随机森林"),
+        ("7", "孟德尔随机化", "外部LD筛选后，协调等位基因与IVW分析", "真实计算", "F筛选、IVW、Q和逐一剔除"),
+        ("8", "免疫微环境证据", "上传表达与签名，比较相对富集分数", "真实计算", "ssGSEA、组间检验及BH"),
     ]
 
     for start in range(0, len(stages), 2):
@@ -154,23 +156,23 @@ def page_learning_center(cfg, project_id):
                     tag1.caption(f"类型：{kind}")
                     tag2.caption(f"状态：{status}")
 
-    st.subheader("高级实验路线图")
+    st.subheader("高级可选教学（不是必做流程）")
     advanced1, advanced2, advanced3 = st.columns(3)
     with advanced1:
         with st.container(border=True):
             st.subheader("9. 单细胞基础")
             st.write("质控、降维、聚类和细胞类型注释")
-            st.caption("细胞通讯的必要前置课程 · 规划中")
+            st.caption("资料/QC/注释课程已开放；通用计算未开放")
     with advanced2:
         with st.container(border=True):
             st.subheader("10. 细胞通讯")
             st.write("基于单细胞数据和配体—受体库推断细胞互作")
-            st.caption("不能由当前 bulk 表达数据直接完成 · 规划中")
+            st.caption("课程已开放；不能由当前bulk直接完成；通用计算未开放")
     with advanced3:
         with st.container(border=True):
             st.subheader("11. 计算扰动")
             st.write("模拟基因干预后的网络或表达状态变化")
-            st.caption("属于假设生成，不等同于真实敲除实验 · 规划中")
+            st.caption("课程/网络删点示意已开放；真实表达扰动预测未开放")
 
     st.subheader("推荐学习路径")
     st.markdown(
@@ -1700,19 +1702,22 @@ def _network_method_text(diagnostics, minimum_weight, directed):
 - 网络密度：{diagnostics['density']:.6f}
 
 ## 解释边界
+中心性按无权最短路径计算；权重仅用于阈值筛选和布局。有向图Closeness使用指向节点的距离。重复节点对合并为简单图，不保留多重边；仅有边表无法恢复孤立节点。
 中心性衡量节点在当前网络结构中的位置，受数据来源、纳入规则和网络完整性影响。中心节点是优先研究候选，不等于关键治疗靶点，也不能单独证明因果关系。
 """
 
 
-def page_network_lab(cfg, project_id):
-    st.subheader("网络药理学在线实验室")
+def page_network_lab(cfg, project_id, embedded=False):
+    st.subheader("上传边表并计算" if embedded else "网络药理学在线实验室")
     st.write(
         "上传药材—成分—靶点或蛋白互作边表，平台将现场清洗关系、"
         "构建网络并计算拓扑指标。"
     )
-    learn_tab, prepare_tab, calculate_tab, interpret_tab = st.tabs(
+    learn_tab, prepare_tab, calculate_tab, interpret_tab = (
+        (st.expander("查看指标解释"), st.expander("输入格式与示例下载"), st.container(), st.expander("怎样解读结果"))
+        if embedded else st.tabs(
         ["① 学原理", "② 备数据", "③ 做分析", "④ 读结果"]
-    )
+    ))
     with learn_tab:
         st.markdown(
             """
@@ -1735,6 +1740,8 @@ def page_network_lab(cfg, project_id):
 
     example_content = example_edge_file()
     with prepare_tab:
+        st.info("边表准备见本节前面的STRING下载与Cytoscape操作说明。此处计算使用你已获取的关系数据。")
+        st.warning("内置网络为教学示意关系与虚构权重，未逐条核实数据库证据，不可作为真实研究结果。")
         st.markdown(
             """
 ### 边表格式
@@ -1764,11 +1771,34 @@ def page_network_lab(cfg, project_id):
             help="首次学习建议使用内置的复方—药材—成分—靶点小型网络。",
         )
         uploaded_edges = None
+        edge_data = None
+        mapping_record = "内置教学示意数据；非数据库证据"
         if not use_example:
             uploaded_edges = st.file_uploader(
                 "上传网络边表", type=["csv", "tsv", "txt", "xlsx", "xls"],
                 key="network_edge_upload",
             )
+            if uploaded_edges is not None:
+                try:
+                    raw_edges = read_edge_table(uploaded_edges)
+                    if not raw_edges.columns.is_unique:
+                        raise ValueError("列名不能重复。")
+                    columns = list(raw_edges.columns)
+                    if len(columns) < 2:
+                        raise ValueError("至少需要两列端点；TSV请使用.tsv或.txt后缀。")
+                    def guess(candidates, fallback):
+                        return next((i for i, c in enumerate(columns) if str(c).lower().strip() in candidates), fallback)
+                    st.dataframe(raw_edges.head(10), hide_index=True, use_container_width=True)
+                    source_col = st.selectbox("起点列（source）", columns, index=guess(["source", "from", "#node1", "node1", "preferredname_a", "stringid_a"], 0))
+                    target_col = st.selectbox("终点列（target）", columns, index=guess(["target", "to", "node2", "preferredname_b", "stringid_b"], 1))
+                    weight_options = [None] + columns
+                    weight_col = st.selectbox("权重/置信度列", weight_options, index=guess(["weight", "score", "combined_score", "combinedscore", "confidence"], -1) + 1, format_func=lambda x: "不提供（默认1）" if x is None else str(x))
+                    scale = st.selectbox("分数尺度（请核对导出说明）", ["保持原始权重", "STRING 0–1000 转为0–1"])
+                    edge_data = map_edge_columns(raw_edges, source_col, target_col, weight_col, "string_1000" if scale.startswith("STRING") else "original")
+                    mapping_record = f"文件：{uploaded_edges.name}；起点：{source_col}；终点：{target_col}；权重：{weight_col}；尺度：{scale}"
+                    st.caption("下方阈值使用转换后的单位。STRING转换后0.7对应原始700；节点仍使用所选列的原始ID。在线上限500节点/5000条去重边。")
+                except Exception as error:
+                    st.error(f"边表准备未完成：{error}")
         option1, option2 = st.columns(2)
         minimum_weight = option1.number_input(
             "最低关系权重", min_value=0.0, value=0.0, step=0.05,
@@ -1783,10 +1813,8 @@ def page_network_lab(cfg, project_id):
             try:
                 if use_example:
                     edge_data = pd.read_csv(BytesIO(example_content))
-                elif uploaded_edges is None:
-                    raise ValueError("请上传网络边表。")
-                else:
-                    edge_data = read_edge_table(uploaded_edges)
+                elif edge_data is None:
+                    raise ValueError("请上传网络边表并正确选择列与尺度。")
                 nodes, edges, graph, diagnostics = analyze_network(
                     edge_data, float(minimum_weight), bool(directed)
                 )
@@ -1795,9 +1823,12 @@ def page_network_lab(cfg, project_id):
                 st.session_state["network_graph"] = graph
                 st.session_state["network_diagnostics"] = diagnostics
                 st.session_state["network_parameters"] = {
-                    "minimum_weight": float(minimum_weight), "directed": bool(directed)
+                    "minimum_weight": float(minimum_weight), "directed": bool(directed),
+                    "mapping_record": mapping_record,
                 }
             except Exception as error:
+                for result_key in ["network_nodes", "network_edges", "network_graph", "network_diagnostics", "network_parameters"]:
+                    st.session_state.pop(result_key, None)
                 st.error(f"网络分析未完成：{error}")
 
         nodes = st.session_state.get("network_nodes")
@@ -1807,6 +1838,7 @@ def page_network_lab(cfg, project_id):
         parameters = st.session_state.get("network_parameters", {})
         if nodes is not None and diagnostics is not None and graph is not None:
             st.success("网络构建完成。以下指标由本次边表现场计算。")
+            st.caption("已计算输入：" + parameters.get("mapping_record", "旧会话数据") + "。修改输入或参数后请重新运行；有向图的线段不显示箭头，以边表方向为准。")
             metrics = st.columns(4)
             metrics[0].metric("节点", diagnostics["node_count"])
             metrics[1].metric("关系边", diagnostics["edge_count"])
@@ -1840,6 +1872,7 @@ def page_network_lab(cfg, project_id):
                 parameters.get("minimum_weight", minimum_weight),
                 parameters.get("directed", directed),
             )
+            method_text += "\n## 输入列与尺度\n" + parameters.get("mapping_record", "未记录")
             st.download_button(
                 "下载实验方法与质量记录（Markdown）",
                 method_text.encode("utf-8-sig"), "network_experiment_record.md",
@@ -2264,6 +2297,7 @@ def _enrichment_method_text(diagnostics, minimum_overlap, fdr_limit):
 
 ## 方法
 以用户上传的目标基因作为样本，以背景基因作为抽样总体，使用单侧超几何检验评估每个功能条目是否出现过度富集，并采用 Benjamini-Hochberg 方法控制多重检验的错误发现率。
+先对所有实际检验条目（包括零命中）进行BH校正，再按最小命中数筛选展示。最小命中数设为0可导出所有检验条目。
 
 ## 本次参数与数据质量
 - 有效目标基因：{diagnostics['target_count']}
@@ -2279,16 +2313,20 @@ def _enrichment_method_text(diagnostics, minimum_overlap, fdr_limit):
 """
 
 
-def page_enrichment_lab(cfg, project_id):
-    st.subheader("GO/KEGG 在线富集实验室")
+def page_enrichment_lab(cfg, project_id, embedded=False):
+    st.subheader("上传数据并计算富集" if embedded else "GO/KEGG 在线富集实验室")
+    if not embedded:
+        st.info("输入准备见侧栏「核心学习与实训 → 04 GO/KEGG富集」；本站当前执行ORA。")
     st.write(
         "上传目标基因、背景基因和“基因—条目”注释表，平台将现场执行"
         "超几何检验与 FDR 校正，而不是展示预先算好的结果。"
     )
 
-    learn_tab, prepare_tab, calculate_tab, interpret_tab = st.tabs(
+    learn_tab, prepare_tab, calculate_tab, interpret_tab = (
+        (st.expander("查看计算原理"), st.expander("输入格式与示例下载"), st.container(), st.expander("怎样解读结果"))
+        if embedded else st.tabs(
         ["① 学原理", "② 备数据", "③ 做分析", "④ 读结果"]
-    )
+    ))
 
     with learn_tab:
         st.markdown(
@@ -2323,6 +2361,7 @@ def page_enrichment_lab(cfg, project_id):
 注释表可以来自经过许可的 GO/KEGG 注释资源。提交作业时应记录数据库名称、版本、下载日期和物种。
             """
         )
+        st.caption("内置注释为缩小的教学示例，含TRAIN占位条目，不是完整或经版本核验的GO/KEGG注释库。当前基因处理按人类符号转大写；其他物种正式分析请先核对ID处理规则。")
         download_columns = st.columns(3)
         for column, (name, content) in zip(download_columns, templates.items()):
             column.download_button(
@@ -2362,7 +2401,8 @@ def page_enrichment_lab(cfg, project_id):
 
         parameter1, parameter2 = st.columns(2)
         minimum_overlap = parameter1.number_input(
-            "最小命中基因数", min_value=1, max_value=20, value=2, step=1
+            "最小命中基因数", min_value=0, max_value=20, value=2, step=1,
+            help="仅影响展示，不缩小BH校正范围；设为0保留全部检验条目。"
         )
         fdr_limit = parameter2.number_input(
             "FDR 阈值", min_value=0.001, max_value=1.0, value=0.05,
@@ -2401,6 +2441,8 @@ def page_enrichment_lab(cfg, project_id):
                     "fdr_limit": float(fdr_limit),
                 }
             except Exception as error:
+                for result_key in ["ora_result", "ora_diagnostics", "ora_parameters"]:
+                    st.session_state.pop(result_key, None)
                 st.error(f"计算未完成：{error}")
 
         result = st.session_state.get("ora_result")
@@ -2432,7 +2474,7 @@ def page_enrichment_lab(cfg, project_id):
                 st.dataframe(display_result, use_container_width=True, hide_index=True)
                 _plot_bubble(display_result, "在线计算富集气泡图")
                 st.download_button(
-                    "下载本次完整计算结果（CSV）",
+                    "下载命中数筛选后的全部结果（CSV）",
                     result.to_csv(index=False).encode("utf-8-sig"),
                     "online_enrichment_results.csv", "text/csv",
                     use_container_width=True,
@@ -2560,6 +2602,7 @@ def page_transcriptome(cfg, project_id):
     import plotly.express as px
 
     st.header("转录组证据验证")
+    st.info("本页解读已有项目结果。新数据请进入「进阶证据 → 转录组数据与设计」第5步：可上传标准化log2表达，做独立两组Welch差异分析并衔接富集。原始计数、配对和批次模型按课程外部路线执行。")
 
     files = cfg.get("data_files", {})
 
@@ -3079,6 +3122,7 @@ def page_machine_learning(cfg, project_id):
     import plotly.express as px
 
     st.header("机器学习模型评估")
+    st.info("本页解读已有项目文件。新数据请进入「进阶证据 → 机器学习与评估」实际操作区，上传表达和分组，训练逻辑回归或随机森林并评估。")
 
     files = cfg.get("data_files", {})
 
@@ -3634,6 +3678,7 @@ def page_mendelian_randomization(cfg, project_id):
     import plotly.graph_objects as go
 
     st.header("孟德尔随机化证据评估")
+    st.info("本页解读既有项目结果。完整资料与假设教学见侧栏「进阶证据 → 孟德尔随机化」。公式示意不等于通用MR计算服务。")
 
     files = cfg.get("data_files", {})
 
@@ -4475,6 +4520,7 @@ def page_immune_infiltration(cfg, project_id):
     import plotly.express as px
 
     st.header("免疫微环境证据")
+    st.info("本页解读既有项目结果。新数据请进入「进阶证据 → 免疫微环境」实际操作区，上传表达与签名运行ssGSEA；不执行去卷积或细胞比例估计。")
     st.caption("研究链条位置：多组学证据扩展，不是网络药理学的必经步骤")
     with st.expander("为什么分析免疫微环境？", expanded=True):
         st.markdown(
@@ -5685,6 +5731,7 @@ def page_report(cfg, project_id):
     from docx import Document
 
     st.header("报告中心")
+    st.caption("现有项目报告与教学自查记录用途不同：学习项目可在「项目工具 → 资料模板与交付自查」填写并下载交付记录；平台不会自动核验外部计算结果。")
     st.write(
         "汇总项目结论，导出 Word 报告、Excel 工作簿"
         "以及完整 CSV 数据包。"
@@ -6209,6 +6256,7 @@ MR 结果还需要结合工具变量强度、异质性、水平多效性
 # ---------------------------------------------------------------------------
 PAGES = {
     "教学实训中心": page_learning_center,
+    "网络药理学操作课程": page_learning_paths,
     "网络药理学教学实验": page_ppi,
     "项目管理": page_project_management,
     "项目首页": page_home,
@@ -6228,6 +6276,7 @@ PAGES = {
 NAVIGATION = {
     "教学实训": [
         "教学实训中心",
+        "网络药理学操作课程",
         "网络药理学教学实验",
         "GO/KEGG 教学实验",
     ],
@@ -6250,30 +6299,64 @@ NAVIGATION = {
 }
 
 
+def navigate_to(route_id):
+    """通过稳定URL路由导航；回调在下一次页面渲染前执行。"""
+    st.query_params["view"] = resolve_route(route_id)
+
+
 def main():
     st.set_page_config(**PAGE_CONFIG)
+    st.markdown("""<style>
+    @media (min-width: 1000px) {
+      [data-testid="stSidebar"] {min-width: 17rem; max-width: 19rem; width: 19rem;}
+    }
+    [data-testid="stSidebarContent"] {padding-top: .5rem;}
+    [data-testid="stMainBlockContainer"] {padding-top: 4.5rem;}
+    [data-testid="stSidebarHeader"] {height: 2.5rem; min-height: 2.5rem;}
+    [data-testid="stSidebarUserContent"] {padding-top: 0;}
+    [data-testid="stSidebar"] [data-testid="stVerticalBlock"] {gap: .65rem;}
+    [data-testid="stSidebar"] [data-testid="stButton"] button {
+      min-height: 2.15rem; text-align: left; justify-content: flex-start;
+    }
+    </style>""", unsafe_allow_html=True)
     projects = list_projects()
     if not projects:
         st.error("未找到任何项目。请先在 projects/ 下创建项目目录并放置 project.yaml。")
         st.stop()
 
-    st.sidebar.title("🌿 HerbInsight")
-    project_id = st.sidebar.selectbox("选择项目", projects)
+    active = resolve_route(st.query_params.get("view"))
+    group, label, page, section = ROUTES[active]
+    st.sidebar.markdown("### 🌿 HerbInsight")
+    st.sidebar.caption("按任务进入 · 无需切换使用模式")
+    with st.sidebar.expander("项目与设置", expanded=False):
+        preferred = projects.index("wujisan_uc") if "wujisan_uc" in projects else 0
+        project_id = st.selectbox("当前项目", projects, index=preferred, key="active_project")
+        st.caption("切换项目只改变案例与项目工具的数据，教学课程通用。")
     cfg = load_project_config(project_id)
-    st.sidebar.caption(f"{cfg.get('project_name', project_id)}\n{vcfg(cfg)}")
-    workspace = st.sidebar.segmented_control(
-        "使用模式",
-        list(NAVIGATION.keys()),
-        default="教学实训",
-        selection_mode="single",
-    )
-    if workspace is None:
-        workspace = "教学实训"
-    page = st.sidebar.radio("功能模块", NAVIGATION[workspace])
-    st.sidebar.divider()
-    st.sidebar.caption(DISCLAIMER)
-
-    PAGES[page](cfg, project_id)
+    st.sidebar.caption("当前项目：" + str(cfg.get("project_name", project_id)))
+    for group_name, entries in NAV_GROUPS.items():
+        with st.sidebar.expander(group_name, expanded=group_name == group):
+            for route_id, title, _, _ in entries:
+                st.button(title, key="nav_" + route_id, type="primary" if active == route_id else "secondary",
+                          width="stretch", on_click=navigate_to, args=(route_id,))
+    with st.sidebar.expander("使用声明"):
+        st.caption(DISCLAIMER)
+    breadcrumb, previous_col, next_col = st.columns([3, 1.8, 1.8])
+    breadcrumb.caption(group + " / " + label)
+    previous, next_route = course_neighbors(active)
+    if previous:
+        previous_col.button("← 上一节", key="course_previous", on_click=navigate_to, args=(previous,), width="stretch")
+    if next_route:
+        next_col.button("下一节 →", key="course_next", on_click=navigate_to, args=(next_route,), width="stretch")
+    if section is not None:
+        practice = None
+        if section == "ppi":
+            practice = lambda: page_network_lab(cfg, project_id, embedded=True)
+        elif section == "enrichment":
+            practice = lambda: page_enrichment_lab(cfg, project_id, embedded=True)
+        page_learning_paths(cfg, project_id, section=section, practice=practice)
+    else:
+        PAGES[page](cfg, project_id)
 
 
 def vcfg(cfg):

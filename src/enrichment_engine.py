@@ -78,7 +78,8 @@ def validate_annotations(data: pd.DataFrame) -> pd.DataFrame:
     if missing:
         raise ValueError("注释表缺少必要字段：" + "、".join(missing))
 
-    cleaned = renamed.copy()
+    # 先移除真实缺失，不能将NaN/None字符串化为虚假功能条目。
+    cleaned = renamed.dropna(subset=["gene_symbol", "term_id", "term_name"]).copy()
     cleaned["gene_symbol"] = cleaned["gene_symbol"].map(normalize_gene)
     cleaned["term_id"] = cleaned["term_id"].astype(str).str.strip()
     cleaned["term_name"] = cleaned["term_name"].astype(str).str.strip()
@@ -90,8 +91,11 @@ def validate_annotations(data: pd.DataFrame) -> pd.DataFrame:
         & (cleaned["term_id"] != "")
         & (cleaned["term_name"] != "")
     ]
+    inconsistent = cleaned.groupby(["term_id", "category"])["term_name"].nunique()
+    if (inconsistent > 1).any():
+        raise ValueError("同一term_id/category对应多个term_name，请统一注释版本与名称后再计算。")
     return cleaned.drop_duplicates(
-        subset=["gene_symbol", "term_id", "term_name"]
+        subset=["gene_symbol", "term_id", "term_name", "category"]
     ).reset_index(drop=True)
 
 
@@ -147,8 +151,6 @@ def run_over_representation(
         term_genes = set(group["gene_symbol"])
         overlap = sorted(targets_in_background & term_genes)
         overlap_count = len(overlap)
-        if overlap_count < minimum_overlap:
-            continue
         term_size = len(term_genes)
         p_value = hypergeom.sf(
             overlap_count - 1,
@@ -177,6 +179,9 @@ def run_over_representation(
     result = pd.DataFrame(rows)
     if not result.empty:
         result["p_adjust"] = benjamini_hochberg(result["p_value"])
+        tested_term_count = len(result)
+        # 展示过滤不能改变实际检验的假设族（包括零命中条目）。
+        result = result[result["count"] >= minimum_overlap]
         result = result.sort_values(
             ["p_adjust", "p_value", "fold_enrichment"],
             ascending=[True, True, False],
@@ -187,7 +192,7 @@ def run_over_representation(
         "target_count": sample_size,
         "background_count": population_size,
         "annotation_count": len(filtered),
-        "term_count": filtered["term_id"].nunique(),
+        "term_count": tested_term_count,
         "ignored_target_count": len(ignored_targets),
         "ignored_targets": sorted(ignored_targets),
     }

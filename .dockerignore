@@ -1,0 +1,12 @@
+.git
+.venv
+venv
+__pycache__
+**/__pycache__
+.streamlit/secrets.toml
+projects/*/raw
+projects/demo_project
+backups
+*.log
+*.tmp
+.vscode
