@@ -171,6 +171,8 @@ def course_markdown():
             "### 官方参考", "\n".join(f"- [{name}]({url})" for name, url in lesson["links"]),
         ])
     parts.append(collection_markdown())
+    from src.symmap_guide import symmap_markdown
+    parts.append(symmap_markdown())
     parts.append(disease_markdown())
     parts.append(ppi_markdown())
     parts.append(enrichment_markdown())

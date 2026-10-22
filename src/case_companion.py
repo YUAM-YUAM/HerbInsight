@@ -22,15 +22,15 @@ STEP_CASES = {
 CASES = {
  'herbs': ('从药材清单开始', 'processed/herbs.csv',
     '先确认处方组成和药材身份，再收集成分与靶点。',
-    '传统操作对照：在处方出处与药材资料中逐味核对，建立药材表，并保留原文件名。',
-    '本表一行是一味药材；source_file可帮助追溯导入文件，但文件名不是数据库或文献证据。',
-    '处方出处、剂量、炮制、数据库版本和检索日期需补充；不能从文件名认定使用了哪一个数据库。',
+    '本案例使用SymMap（研究者已确认）。逐味核对药材详情与条目ID，保存靶点关联导出；处方出处和剂量另从处方资料确认。具体字段和表格见下方SymMap操作单。',
+    '本表一行是一味药材；source_file对应原始导出。来源已由研究者确认是SymMap，不再把来源列为未知。species=Homo sapiens为导入脚本统一填写的靶点研究设定，不是药材基原或逐条物种审核结果。',
+    '已知来源为SymMap；尚需补齐药材详情ID/URL、实际检索日期、版本与处方出处。没有保存的记录留空并说明，不能猜填。',
     '本站对应：用本课药材登记模板补齐出处，再整理下游关系表。'),
  'targets': ('候选靶点不等于已证实靶点', 'processed/compound_targets.csv',
     '把各药材候选关系整理成可追溯的靶点明细。',
-    '传统操作对照：按来源分别导出关系、记录证据字段，再在Excel/R/Python合并。',
+    '本案例来源为SymMap（研究者已确认）：逐味保存靶点关联表，保留Target id、Gene symbol、UniProt id、Relationship及统计字段，再添加药材名与来源信息。',
     '当前表包含herb_name、gene_symbol、uniprot_id、relationship和评分；同一基因可来自多味药，不应把证据行数当作独立靶点数。文件名含compound，但表中没有独立compound_id，不能声称已还原每个成分—靶点关系。',
-    '评分定义、上游来源和筛选标准需回查原始记录；不把p_value直接当作本研究的表达差异P值。',
+    '已知来源为SymMap；评分的具体定义/版本和原筛选标准仍需回查文档与记录。不把p_value直接当作本研究的表达差异P值。',
     '本站对应：先完成来源审核和ID统一，再抽出基因集合；成分网络还需要补齐成分标识。'),
  'mapping': ('UniProt字段与映射审核不是一回事', 'processed/compound_targets.csv',
     '核对已有UniProt与基因符号，避免重复或错误映射。',
@@ -147,5 +147,8 @@ def render_case_step(section, step):
             st.dataframe(flags, hide_index=True, width='stretch')
         st.warning('待补/不可推断：'+missing)
         st.caption('传统路线是本课推荐操作，不是已确认的原研究操作日志。补齐记录后才能开展同输入、同方法的数值复核。')
+        if key == 'herbs':
+            from src.symmap_guide import render_symmap_workflow
+            render_symmap_workflow()
         st.download_button('下载本步案例解析与文件校验值', companion_markdown(key,digest,len(table)).encode('utf-8-sig'),
                            f'wujisan_case_{key}.md', 'text/markdown', key='case_companion_'+key)
