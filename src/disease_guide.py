@@ -116,7 +116,7 @@ def render_disease_guide():
     import streamlit as st
 
     st.subheader("疾病基因收集 → 交集 → STRING")
-    st.info("承接上一节drug_target_genes.txt：另行收集并审核疾病基因，统一物种和ID后再求交集。本站不会自动抓取这些数据库，也不会替你决定证据阈值。")
+    st.write("药物侧清单已经准备好，接下来补齐疾病侧。先确认数据库里的疾病是不是你要研究的那一个，再记录来源和筛选条件。两侧物种、ID统一后，就能在本页求交集。外部检索和筛选依据由你完成。")
     for name, url in [("GeneCards", "https://www.genecards.org/"), ("DISGENET", "https://disgenet.com/"), ("OMIM", "https://omim.org/"), ("PubMed", "https://pubmed.ncbi.nlm.nih.gov/")]:
         st.link_button(name + " 官方入口", url)
     st.caption("以下按数据任务说明操作，具体菜单、字段和下载权限以当前官方文档为准；无法访问时记录替代来源，不绕过访问限制。")

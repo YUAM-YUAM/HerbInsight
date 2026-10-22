@@ -132,7 +132,7 @@ def render_transcriptome_guide():
     import streamlit as st
 
     st.subheader("可选扩展：转录组资料与设计核对")
-    st.info("第5步可以上传已标准化log2表达，完成独立两组差异分析并接着做富集。GEO疾病数据提供疾病表达证据，复方治疗效应需要对应干预数据。")
+    st.write("这一节回答：候选基因在疾病组织中是否发生了表达变化？先读懂样本设计，再整理矩阵和分组。第5步可以上传已标准化log2表达，完成独立两组比较并接着做富集。疾病表达关联与复方干预效应是两个不同问题。")
     for name, url in [("GEO DataSets", "https://www.ncbi.nlm.nih.gov/gds/"), ("GEO2R官方说明", "https://www.ncbi.nlm.nih.gov/geo/info/geo2r.html"), ("limma", "https://bioconductor.org/packages/limma/"), ("DESeq2", "https://bioconductor.org/packages/DESeq2/"), ("edgeR", "https://bioconductor.org/packages/edgeR/")]:
         st.link_button(name, url)
     st.caption("链接为官方学习入口；本页不宣称已验证每项当前检索/下载界面。按许可获取数据，不能补造缺失分组。")

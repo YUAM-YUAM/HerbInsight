@@ -113,7 +113,7 @@ def render_ppi_guide(practice=None):
     from src.network_engine import map_edge_columns
 
     st.subheader("共同靶点 → STRING → Cytoscape / 本站")
-    st.info("拿着上一节共同基因清单开始。本节讲清每次文件交接；获取真实PPI仍需在外部数据库按许可操作。")
+    st.write("拿到共同基因清单后，先去STRING查关联，再把边表交给Cytoscape或本平台。接下来重点看三件事：节点有没有匹配上、参数怎么选、导出的文件交给谁。")
     for name, url in [("STRING官方帮助", "https://string-db.org/help/faq/"), ("Cytoscape网络导入手册", "https://manual.cytoscape.org/en/stable/Creating_Networks.html"), ("Cytoscape Analyzer手册", "https://manual.cytoscape.org/en/stable/Network_Analyzer.html")]:
         st.link_button(name, url)
     for i, (title, body) in enumerate(PPI_STEPS):
@@ -138,7 +138,7 @@ def render_ppi_guide(practice=None):
     kept = mapped[mapped["weight"] >= cutoff]
     st.metric("演示保留边数", len(kept))
     st.dataframe(kept, hide_index=True, width="stretch")
-    st.caption("此处演示评分换算与筛选，不冒充完整建图结果。真实数据的清洗、中心性、网络图与结果导出，请进入左侧「网络药理学教学实验」。")
+    st.caption("这段模拟练习只看评分换算与筛选。准备好真实边表后，展开本课第7步，即可建图、计算中心性并导出结果。")
     st.subheader("遇到问题先检查这里")
     st.dataframe(pd.DataFrame(TROUBLESHOOTING, columns=["现象", "核查方式"]), hide_index=True, width="stretch")
     st.download_button("下载PPI建图完整操作单（Markdown）", ppi_markdown().encode("utf-8-sig"), "ppi_building_guide.md", "text/markdown", key="ppi_guide_download")

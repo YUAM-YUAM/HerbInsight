@@ -121,7 +121,7 @@ def render_ml_guide():
     import streamlit as st
 
     st.subheader("机器学习：先防泄漏，再谈模型性能")
-    st.info("课程下方可上传表达矩阵训练逻辑回归或随机森林，完成训练内交叉验证与内部保留测试集评估；已有案例与固定示意练习单独标明。")
+    st.write("先别急着挑模型。我们先把训练与测试样本分开，再看特征怎么筛、指标怎么读。课程下方可以用自己的表达数据训练逻辑回归或随机森林；案例结果和模拟练习会单独标明。")
     for name, url in [("scikit-learn防泄漏指南", "https://scikit-learn.org/stable/common_pitfalls.html"), ("scikit-learn模型评估", "https://scikit-learn.org/stable/modules/model_evaluation.html"), ("tidymodels", "https://www.tidymodels.org/"), ("Orange", "https://orangedatamining.com/")]:
         st.link_button(name, url)
     for i, (title, body) in enumerate(ML_STEPS):

@@ -53,7 +53,7 @@ def render_first_experiment():
     import streamlit as st
     with st.expander("三分钟实训：亲手算一次，再解释为什么", expanded=False):
         st.write("不需要账号或自备文件。这里调用与正式课程相同的ORA引擎，不是预存结果图片。")
-        st.warning("模拟教学数据：100个虚构基因分成10个集合。没有药材关系、真实GO/KEGG注释或治疗结论。")
+        st.info("模拟数据体验 · 100个虚构基因、10个集合。用于理解统计流程，不包含真实GO/KEGG注释或药物疗效证据。")
         st.markdown("**1 · 改输入**：背景100个基因、目标20个；集合1含10个基因。改变目标与集合1的重叠数，观察结果。目标总数保持20，其他集合的命中也随之改变。")
         hits = st.slider("目标与模拟集合1的重叠基因数", 1, 10, 5, key="first_hits")
         targets, background, annotations = experiment_inputs(hits)

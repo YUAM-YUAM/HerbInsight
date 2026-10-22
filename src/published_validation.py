@@ -9,7 +9,7 @@ def render_published_validation():
     root = Path(__file__).resolve().parents[1] / 'validation/gse38713'
     with st.expander('真实数据复核：GSE38713与原论文摘要对照'):
         st.write('已用本站正式Welch差异分析函数重算公开GC-RMA log2表达；不是模拟练习，也不是直接展示作者结果。')
-        st.warning('同一发现数据的探索性再分析，不是独立外部验证。论文全文受访问验证限制，本次仅对照原论文摘要的具名结论。不能据此证明五积散疗效。')
+        st.caption('验证范围：同一发现数据的探索性再分析，对照论文摘要具名结论；非独立外部验证。全文访问受限，未开展全文严格复现，不用于推断五积散疗效。')
         st.markdown('[GEO数据](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE38713) · [原论文：Planell et al., Gut 2013](https://pubmed.ncbi.nlm.nih.gov/23135761/)')
         summary = json.loads((root / 'summary.json').read_text(encoding='utf-8'))
         st.caption(f"对照13例、缓解期8例、活动期受累黏膜15例；排除7份配对非受累黏膜。共{summary['tested_genes']:,}个基因，分别做全基因BH校正。")

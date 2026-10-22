@@ -57,12 +57,13 @@ def study_record(title, question, branches, results, limitations, checked):
 def render_delivery():
     import pandas as pd
     import streamlit as st
-    st.subheader("能力清单：哪些能在本站计算？")
+    st.subheader("分析方法与适用范围")
     st.dataframe(pd.DataFrame(CAPABILITIES, columns=["模块", "定位", "本站实际能力", "外部路线", "边界"]), hide_index=True, width="stretch")
-    st.caption("可上传通用算法当前为边表网络分析与自备注释ORA；清单交集为粘贴工具。其余演示/核对不是对应完整分析算法。外部资源与本地环境仍需使用者合法准备。")
+    st.caption("在线计算涵盖网络分析、ORA、限定设计的差异表达、分类模型、ssGSEA与IVW。各模块输入和适用设计见表；外部工具课程与模拟练习单独标识。")
     st.download_button("下载能力与归档清单", capability_markdown().encode("utf-8-sig"), "platform_capabilities.md", "text/markdown", key="course_capabilities_download")
-    st.subheader("教学交付与自查")
-    st.warning("这是学习者自查，不是自动验收或科学认证。下载后本地保存；换页或清理会话可能重置未保存内容。未做分支请在理由中说明不适用，不强制把所有方法都运行一遍。")
+    st.subheader("整理你的研究记录")
+    st.write("先用一句话写清研究问题，再记录用到的方法、结果文件和下一步计划。只填写与你研究相关的分支，其余标为不适用。")
+    st.caption("记录由你核对并填写，不构成平台认证。完成后请下载保存，会话重置可能丢失未保存内容。")
     title = st.text_input("教学项目名称", key="delivery_title")
     question = st.text_area("你的研究问题", key="delivery_question")
     branches = st.text_area("选哪些分支、为什么；哪些不适用", key="delivery_branches")

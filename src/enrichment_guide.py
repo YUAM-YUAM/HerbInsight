@@ -118,7 +118,7 @@ def render_enrichment_guide(practice=None):
     from scipy.stats import hypergeom
 
     st.subheader("GO/KEGG：三个输入文件从哪里来？")
-    st.info("先明确目标与背景，再选网页、R或本站ORA。暂时没有完整注释资源，可以先用g:Profiler等工具学习；不要把显著结果表当成注释表。")
+    st.write("富集分析先准备三份材料：目标基因、背景基因、完整注释。可以走网页、R或本平台ORA路线；先看清输入是什么，再选择工具。显著结果表是分析产物，不是注释输入。")
     for name, url in [("g:Profiler", "https://biit.cs.ut.ee/gprofiler/"), ("clusterProfiler", "https://bioconductor.org/packages/release/bioc/html/clusterProfiler.html"), ("GO注释下载说明", "https://geneontology.org/docs/download-go-annotations/"), ("KEGG官方入口", "https://www.kegg.jp/"), ("org.Hs.eg.db", "https://bioconductor.org/packages/org.Hs.eg.db/")]:
         st.link_button(name, url)
     for i, (title, body) in enumerate(ENRICHMENT_STEPS):

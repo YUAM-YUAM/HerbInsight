@@ -193,7 +193,8 @@ def render_course_overview():
     import streamlit as st
     st.subheader("HerbInsight · 从会看结果，到会完成分析")
     st.write("面向中医药与生命科学初学者的网络药理学教学实训平台。沿着资料收集、数据整理、分析计算、结果解释完成一次可追溯的学习任务。")
-    st.info("第一次来：从01开始。已有规范数据：直接进入对应课程的计算区。五积散—溃疡性结肠炎用于案例解读，不是已证实的治疗机制或临床建议。")
+    st.write("第一次做网络药理学？从资料整理开始，跟着五积散案例走完一条研究路线。已经准备好数据，就进入对应课程，直接开始计算。")
+    st.caption("科研与教学用途 · 案例关联不代表治疗机制已证实，不用于临床决策")
     render_first_experiment()
     with st.expander("这次学习要交付什么？", expanded=False):
         st.markdown("**任务**：为一个明确的复方—疾病问题建立候选关联分析。\n\n**准备**：处方出处与物种、来源登记、药材/成分/靶点关系、疾病基因证据。\n\n**交付**：映射审核表、共同靶点、PPI边表与参数、富集结果及背景说明、包含局限性的分析记录。\n\n**完成标准**：每张结果图能追溯到输入、来源、参数和方法；能解释关联为何不等于机制。")
@@ -210,8 +211,7 @@ def render_course_overview():
                 st.subheader(title)
                 st.write(description)
                 st.button("进入学习", key="start_" + route, on_click=_open_course_route, args=(route,), width="stretch")
-    st.caption("跟着课程准备资料，在PPI第7步、GO/KEGG第6步即可上传数据并计算，无需另找入口。进阶证据按研究需要选学。")
-    st.caption("在资料整理、富集、转录组和机器学习课程中，展开「纠错挑战」练习常见错误；课程内可计算，不要求先完成测验。")
+    st.caption("计算入口就在课程里：PPI第7步、GO/KEGG第6步。遇到不熟悉的概念，可以先做一题纠错练习；进阶方法按研究问题选学。")
     render_learning_record()
     with st.expander("查看8步输入与产物对照"):
         st.dataframe(pd.DataFrame([
@@ -246,7 +246,7 @@ def render_course_resources():
     import pandas as pd
     import streamlit as st
     from pathlib import Path
-    with st.expander("作品验证与演示材料（不增加学习步骤）"):
+    with st.expander("验证记录与作品说明"):
         st.write("自动化检查验证软件行为，不证明教学效果或临床有效性。已完成GSE38713探索性再分析与论文摘要对照，见转录组课程；独立队列验证、全文严格复现及真人试用尚未完成。")
         docs = Path(__file__).resolve().parents[1] / "docs"
         for filename, label in [("reviewer_walkthrough.md", "评审演示与能力边界"), ("pilot_protocol.md", "初学者试用任务与空白记录"), ("validation_protocol.md", "真实数据复核方案"), ("contribution_disclosure.md", "原创贡献与AI使用披露模板")]:

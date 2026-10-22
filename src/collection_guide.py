@@ -168,7 +168,7 @@ def render_collection_guide():
             for step in (0, 3, 5):
                 render_case_step("collection", step)
         return
-    st.info("目标不是下载越多越好，而是形成可追溯的药材—成分—原始靶点—标准基因关系。完成A至F后，再做疾病基因交集。本站不代替外部检索或人工身份审核。")
+    st.write("这一节先把资料整理清楚：从药材出发，找到成分与靶点，再把不同ID统一到同一套基因标识。走完A至F，就可以带着审核后的清单进入疾病交集。数据库检索和身份核对需要在来源端完成。")
     st.markdown("**交接顺序**：处方/药材表 → 药材成分表 → 成分结构核对 → 原始靶点表 → 分类型ID清单 → UniProt映射表 → 标准关系表与去重基因清单。")
     st.caption("建议分raw/（原始下载）、working/（清洗和审核）、exports/（下游输入）。原始文件不覆盖；每次检索记录数据库版本、日期、关键词、筛选条件与使用许可。")
     for index, step in enumerate(COLLECTION_STEPS):
@@ -177,14 +177,14 @@ def render_collection_guide():
             for name, url in step["links"]:
                 st.link_button(name, url)
             st.markdown(step["actions"])
-            st.success("应保存/交付：" + step["save"])
-            st.warning(step["check"])
+            st.markdown("**这一步保存什么**：" + step["save"])
+            st.caption("核对要点：" + step["check"])
             st.caption("下方表格规范对应文件：" + step["table"])
             from src.case_companion import render_case_step
             render_case_step("collection", index)
     st.subheader("资料审核工作表（不是分析程序的直接输入）")
     st.caption("仅适用于当前成分—靶点路线；若使用SymMap药材靶点表，切换上方路线，不必再填这一套。")
-    st.warning("以下示例只展示填写格式，使用虚构编号与占位关系；空白表示尚未获得信息。不要当作可运行数据或真实药材靶点证据。CSV保存为UTF-8，日期YYYY-MM-DD，ID按文本保存，一格一个值、不合并单元格。")
+    st.caption("格式示例 · 虚构编号与占位关系，仅用于学习填写。CSV使用UTF-8，日期YYYY-MM-DD，ID按文本保存；未知值留空，一格一个值。")
     for filename, grain, fields in TABLE_SCHEMAS:
         with st.expander(filename + " · " + grain):
             st.dataframe(pd.DataFrame(fields, columns=["字段名", "填写说明", "格式示例"]), hide_index=True, width="stretch")

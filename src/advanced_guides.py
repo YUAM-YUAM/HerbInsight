@@ -184,10 +184,18 @@ def render_advanced_course(key):
     import streamlit as st
     course = ADVANCED_COURSES[key]
     st.subheader(course["title"])
-    st.info(course["boundary"])
+    introductions = {
+        "immune": "表达差异告诉我们哪些基因变了。这一节换个角度：看看免疫相关基因集合在样本中的整体表现。先选与问题匹配的签名，再看覆盖率，最后比较评分；ssGSEA给出的是相对富集，不是细胞比例。",
+        "mr": "如果想进一步讨论因果方向，就要先审查遗传工具，而不是直接看一张OR图。我们从暴露与结局的定义开始，逐步核对独立性、效应单位和等位基因，再进入IVW计算。",
+        "single_cell": "bulk数据看到的是组织平均信号。想知道哪些细胞参与、细胞之间可能如何交流，需要先准备单细胞表达和可靠注释，再选择通讯工具；这一节带你完成外部分析的准备与解读。",
+        "perturbation": "删掉一个网络节点，与让细胞中的基因失活，是两件不同的事。先明确你想研究拓扑变化还是表达响应，再选择相应数据和方法；本页网络删点用于理解前者。",
+    }
+    st.write(introductions[key])
+    with st.expander("方法范围与数据要求"):
+        st.write(course["boundary"])
     for name, url in course["links"]:
         st.link_button(name, url)
-    st.caption("具体资源、接口、输入与许可证以方法的当前官方文档为准；不代替合法获取与科学审核。")
+    st.caption("按当前官方文档确认版本、输入和使用许可，再开始准备数据。")
     for i, (title, body) in enumerate(course["steps"]):
         with st.expander(title, expanded=i == 0):
             st.markdown(body)
@@ -204,7 +212,7 @@ def render_advanced_course(key):
             st.download_button("下载 · " + name, pd.DataFrame(columns=[key for key, _ in fields]).to_csv(index=False).encode("utf-8-sig"), name, "text/csv", key="advanced_" + name)
     if key == "mr":
         st.subheader("公式演示：协调方向错误会发生什么？")
-        st.warning("完全虚构的三个工具，假定已独立且单位匹配；固定效应IVW忽略暴露估计误差。没有GWAS下载、LD处理、协调、弱工具检查或因果有效性审核。")
+        st.caption("模拟公式练习 · 3个虚构工具变量，假定独立、单位匹配；固定效应IVW忽略暴露估计误差。本练习不包含GWAS获取、LD处理、协调或工具有效性审核。")
         wrong = st.toggle("演示错误：将第二个结局beta方向反过来", key="mr_demo_wrong_direction")
         outcome = [0.05, -0.09 if wrong else 0.09, 0.07]
         result = ivw_formula_demo([0.1, 0.2, 0.15], outcome, [0.03, 0.04, 0.03])
@@ -220,7 +228,7 @@ def render_advanced_course(key):
         node = st.selectbox("删除哪个示意节点", ["NODE_A", "NODE_B", "NODE_C", "NODE_D", "NODE_E"], key="perturbation_demo_node")
         before, after = node_removal_demo(node)
         st.dataframe(pd.DataFrame([{"状态": "删点前", **before}, {"状态": "删点后", **after}]), hide_index=True, width="stretch")
-        st.warning("连通分量变多只说明固定图更碎；没有预测真实表达、细胞死亡或药物疗效。")
+        st.caption("结果解读：连通分量增加表示网络更分散。这是拓扑变化，不涉及真实表达、细胞死亡或药物疗效预测。")
     st.download_button("下载本分支教学操作单", _single_course_markdown(course).encode("utf-8-sig"), key + "_guide.md", "text/markdown", key="advanced_download_" + key)
 
 

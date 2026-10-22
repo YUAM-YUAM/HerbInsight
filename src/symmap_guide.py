@@ -72,12 +72,12 @@ def symmap_markdown():
 def render_symmap_workflow():
     import streamlit as st
     st.subheader('SymMap具体怎么查、怎么整理？')
-    st.caption('本案例来源由研究者确认：SymMap。以下表头已与现有半夏sy.csv核对；当前网站菜单名称、访问与导出权限以实际页面为准。')
-    st.info('最少先做两张表：药材登记表 + 药材—靶点主表。要做成分网络时，再补两张成分关系表。')
+    st.caption('案例来源：SymMap（研究者确认） · 字段依据：半夏sy.csv · 网站界面与导出权限以当前版本为准')
+    st.write('先记住这条路线：逐味找到药材，保存靶点关联，再核对ID。我们先完成药材登记表和药材—靶点主表；如果研究还需要成分网络，再补成分关系表。')
     for step in STEPS:
         st.write(step)
     st.dataframe(pd.DataFrame(FIELDS, columns=['原始下载列','整理后列名','保留与解释']), hide_index=True, width='stretch')
-    st.warning('截图里的species=Homo sapiens由原导入脚本统一填写，只代表项目设定，不是药材的物种，也不能替代逐条靶点物种核对。新模板用botanical_origin与target_species分别记录。')
+    st.caption('物种分开记：botanical_origin记录药材基原，target_species记录靶点物种。原案例的Homo sapiens由导入脚本统一填写，逐条身份仍需核查。')
     with st.expander('照着填：半夏已有记录怎样进入主表'):
         data = pd.read_csv(ROOT / 'projects/wujisan_uc/processed/compound_targets.csv')
         sample = data.loc[data.herb_name.eq('半夏'), ['herb_name','target_id','gene_symbol','uniprot_id','relationship','p_value','fdr_bh','evidence_score','source_file']].head(2).copy()
@@ -85,7 +85,7 @@ def render_symmap_workflow():
         sample['mapping_status'] = 'pending'
         sample['included'] = 'pending'
         st.dataframe(sample, hide_index=True, width='stretch')
-        st.caption('前两行数值来自你的现存文件，不是虚构示例；pending是本教学整理建议，不覆盖原结果。药材ID、检索日期、URL和版本目前未取得，不填假值。两条都不能仅因存在于表中就默认纳入。')
+        st.caption('真实归档预览 · 前两行来自原文件。pending表示示范审核状态，不改动原结果；药材ID、检索日期、URL与版本尚无记录，补齐依据后再决定纳入。')
     for filename, (grain, fields) in TABLES.items():
         with st.expander(filename+' · '+grain):
             st.dataframe(pd.DataFrame(fields, columns=['列名','怎么填写']), hide_index=True, width='stretch')

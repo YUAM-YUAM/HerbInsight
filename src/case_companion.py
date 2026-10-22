@@ -113,27 +113,27 @@ def render_case_step(section, step):
         return
     title, path, question, traditional, interpretation, missing, platform = CASES[key]
     with st.expander('五积散案例对照 · '+title):
-        st.caption('固定教学案例：五积散—溃疡性结肠炎。展示已有文件，不随所选项目变化，不覆盖原始结果。')
-        st.write('本步问题：'+question)
+        st.caption('研究案例 · 五积散与溃疡性结肠炎 · 已归档结果（独立于当前项目选择）')
+        st.write(question)
         left, right = st.columns(2)
         with left:
-            st.markdown('**传统操作与文件交接**')
+            st.markdown('**传统工具怎么做**')
             st.write(traditional)
         with right:
-            st.markdown('**本站对应操作**')
+            st.markdown('**在平台上完成**')
             st.write(platform)
         try:
             table, digest = case_table(key)
         except (OSError, ValueError) as error:
             st.warning('案例文件暂不可用；课程仍可继续。'+str(error))
             return
-        st.caption(f'已有归档：{path} · {len(table):,}行；以下仅展示前8行，不代表全部数据。')
+        st.caption(f'数据来源：{path} · 共{len(table):,}行 · 预览前8行')
         preview = table.sort_values('degree', ascending=False) if key == 'topology' else table
         st.dataframe(preview.head(8), hide_index=True, width='stretch')
         if key == 'topology':
             st.caption('已有结果再绘图：连接数前10位，不是重新筛出的治疗靶点。')
             st.bar_chart(preview.head(10).set_index('gene_symbol')[['degree']])
-        st.markdown('**怎样读结果**')
+        st.markdown('**一起读结果**')
         st.write(interpretation)
         if key == 'overlap':
             audit = overlap_audit()
@@ -145,7 +145,9 @@ def render_case_step(section, step):
         if key == 'ml':
             flags = pd.read_csv(CASE / 'results/ml_quality_flags.csv')
             st.dataframe(flags, hide_index=True, width='stretch')
-        st.warning('待补/不可推断：'+missing)
-        st.caption('传统路线是本课推荐操作，不是已确认的原研究操作日志。补齐记录后才能开展同输入、同方法的数值复核。')
+        st.caption('记录状态：部分复现材料尚未归档，详见下方方法说明。')
+        with st.expander('方法与资料完整性'):
+            st.write(missing)
+            st.write('传统路线用于讲解操作方法；原研究的具体操作以归档脚本、参数和会话为依据。数值复核需要统一输入和方法。')
         st.download_button('下载本步案例解析与文件校验值', companion_markdown(key,digest,len(table)).encode('utf-8-sig'),
                            f'wujisan_case_{key}.md', 'text/markdown', key='case_companion_'+key)

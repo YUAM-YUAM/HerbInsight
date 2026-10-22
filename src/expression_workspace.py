@@ -50,7 +50,7 @@ def inputs(prefix):
 
 
 def render_expression_analysis():
-    st.subheader("在这里完成差异分析与富集")
+    st.subheader("差异表达分析")
     st.write("当前方法：独立两组的逐基因Welch t检验，随后在全部可检验基因上做BH校正。log2FC为两组平均log2表达之差；本方法不进行limma的经验贝叶斯收缩。")
     data = inputs("de")
     if data is None:
@@ -108,7 +108,7 @@ def render_expression_analysis():
               "tested_background.csv": pd.DataFrame({"gene_symbol": tested}), "aligned_samples.csv": run["aligned"]}
     st.download_button("下载差异分析结果与方法记录（ZIP）", result_zip(tables, record), "differential_analysis.zip", key="de_zip")
     st.divider()
-    st.subheader("接着做GO/KEGG富集")
+    st.subheader("下一步：功能富集")
     st.caption("自动使用上面实际检验的基因作背景；注释覆盖范围还会进一步限制有效背景。正式分析请提供同物种、同ID的完整注释表。")
     direction = st.selectbox("用哪组差异基因做富集", ["全部达阈值基因", "仅上调", "仅下调"], key="de_ora_direction")
     target = significant if direction.startswith("全部") else significant[significant.log2fc > 0] if direction == "仅上调" else significant[significant.log2fc < 0]
@@ -145,7 +145,7 @@ def render_expression_analysis():
 
 
 def render_machine_learning():
-    st.subheader("用自己的表达数据训练分类模型")
+    st.subheader("训练与评估分类模型")
     st.write("先保留25%样本作内部测试集；其余样本在训练集内交叉验证。去除常量、标准化和特征筛选都在训练折内完成。请使用未按全体分组预筛选的表达矩阵。")
     data = inputs("ml_run")
     if data is None:

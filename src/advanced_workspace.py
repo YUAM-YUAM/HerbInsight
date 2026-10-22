@@ -7,7 +7,7 @@ from src.advanced_analysis import run_mr, mr_example, immune_ssgsea
 
 
 def render_mr_analysis():
-    st.subheader("上传工具变量表进行MR计算")
+    st.subheader("孟德尔随机化 · IVW分析")
     st.write("支持已按同一基因组版本合并、已在外部做LD筛选的两样本汇总数据。进行单碱基等位基因协调、F阈值筛选、IVW、异质性与逐一剔除分析；回文位点保守排除。")
     example = mr_example()
     st.download_button("下载MR输入示例（虚构）", example.to_csv(index=False).encode("utf-8-sig"), "mr_input_example.csv", key="mr_input_example")
@@ -49,7 +49,7 @@ def render_mr_analysis():
 
 
 def render_immune_analysis():
-    st.subheader("上传表达与签名，计算ssGSEA")
+    st.subheader("免疫相关签名 · ssGSEA评分")
     st.caption("输出免疫相关签名相对富集分数，不是细胞比例。使用已标准化log2表达进行样本内秩评分，分组比较限独立两组。")
     data = inputs("immune_run")
     if data is None:
