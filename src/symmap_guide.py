@@ -30,7 +30,7 @@ TABLES = {
     ('target_species','靶点研究物种；不是药材物种'), ('species_evidence','物种确认依据；未确认则留空'),
     ('notes','同名、缺失或身份疑问')]),
  'symmap_herb_targets.csv': ('一行一条药材—靶点—来源关系（主表）', [
-    ('herb_name','从本次检索药材登记带入'), ('symmap_herb_id','连接药材登记表'),
+    ('formula_name','复方名称；项目管理导入需要'), ('herb_name','从本次检索药材登记带入'), ('symmap_herb_id','连接药材登记表'),
     *[(dest, note) for _, dest, note in FIELDS],
     ('source_db','SymMap'), ('source_url','药材或靶点记录URL'), ('query_date','真实检索日期'),
     ('database_version','实际版本或未报告'), ('source_file','原始靶点表文件名'),
@@ -90,5 +90,53 @@ def render_symmap_workflow():
         with st.expander(filename+' · '+grain):
             st.dataframe(pd.DataFrame(fields, columns=['列名','怎么填写']), hide_index=True, width='stretch')
             st.download_button('下载空表 · '+filename, pd.DataFrame(columns=[name for name,_ in fields]).to_csv(index=False).encode('utf-8-sig'), filename, 'text/csv', key='symmap_'+filename)
-    st.caption('CSV用UTF-8保存；一格一个ID/值，不合并单元格。未知信息留空并写备注，不能以0替代缺失评分。以上是证据整理表，不保证直接匹配项目管理上传接口。')
+    st.caption('以上四张是审核工作表，不直接上传项目管理。CSV用UTF-8保存，一格一个ID/值，不合并单元格；未知信息留空并写备注。审核完成后用下方转换区生成真正的分析输入，不另填重复表。')
+    render_symmap_export()
     st.download_button('下载SymMap逐步操作单', symmap_markdown().encode('utf-8-sig'), 'SymMap_workflow.md', 'text/markdown', key='symmap_workflow')
+
+
+def prepare_symmap_export(table):
+    """Only explicitly reviewed human targets enter analysis. Never overwrite input."""
+    required = ['formula_name','herb_name','gene_symbol','target_species','mapping_status','included','decision_reason']
+    missing = set(required)-set(table.columns)
+    if missing:
+        raise ValueError('缺少列：'+', '.join(sorted(missing)))
+    work = table.copy()
+    for field in required:
+        work[field] = work[field].fillna('').astype(str).str.strip()
+    chosen = work.included.eq('yes')
+    invalid = chosen & (~work.mapping_status.eq('mapped') | ~work.target_species.eq('Homo sapiens') |
+                        work.gene_symbol.eq('') | work.formula_name.eq('') | work.herb_name.eq('') | work.decision_reason.eq(''))
+    if invalid.any():
+        raise ValueError('标为yes的行仍有空值、物种或映射问题；请先修正，不会静默丢弃。此转换限人类靶点。')
+    selected = work.loc[chosen].copy()
+    if selected.empty:
+        raise ValueError('没有明确标记included=yes且已审核的记录；不会把pending当作通过。')
+    if selected.formula_name.nunique() != 1:
+        raise ValueError('一次只导出一个复方，避免把多个复方混成同一靶点集。')
+    selected['species'] = selected.target_species
+    # Keep all evidence rows and optional fields; deduplicate only downstream gene list.
+    cols = ['formula_name','herb_name','gene_symbol'] + [c for c in selected if c not in ['formula_name','herb_name','gene_symbol']]
+    targets = selected[cols].reset_index(drop=True)
+    herbs = targets[['formula_name','herb_name']].drop_duplicates().reset_index(drop=True)
+    genes = '\n'.join(sorted(set(targets.gene_symbol)))+'\n'
+    return herbs, targets, genes
+
+
+def render_symmap_export():
+    import streamlit as st
+    from src.expression_analysis import read_analysis_table
+    with st.expander('审核完成后：转换为现有项目可读取的输入'):
+        st.write('上传填好的symmap_herb_targets.csv。只导出included=yes、mapping_status=mapped、target_species=Homo sapiens且有纳入理由的记录。这里只核对格式与填写状态，不代替身份/证据真实性审核。')
+        upload = st.file_uploader('已审核SymMap主表', type=['csv','tsv'], key='symmap_reviewed_upload')
+        if upload is None:
+            return
+        try:
+            herbs, targets, genes = prepare_symmap_export(read_analysis_table(upload))
+        except (ValueError, UnicodeError) as error:
+            st.error(str(error))
+            return
+        st.success(f'可交付：{len(herbs)}味药、{len(targets)}条保留来源的关系、{len(genes.splitlines())}个去重基因。')
+        st.caption('herbs.csv与compound_targets.csv交给“项目管理”对应上传项；drug_target_genes.txt交给疾病交集。不会自动写入或覆盖五积散项目。未纳入药材和排除记录仍保留在原审核工作表。')
+        for name, data in [('herbs.csv',herbs.to_csv(index=False)),('compound_targets.csv',targets.to_csv(index=False)),('drug_target_genes.txt',genes)]:
+            st.download_button('下载分析输入 · '+name, data.encode('utf-8-sig'), name, key='symmap_export_'+name)

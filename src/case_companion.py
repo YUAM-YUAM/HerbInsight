@@ -22,7 +22,7 @@ STEP_CASES = {
 CASES = {
  'herbs': ('从药材清单开始', 'processed/herbs.csv',
     '先确认处方组成和药材身份，再收集成分与靶点。',
-    '本案例使用SymMap（研究者已确认）。逐味核对药材详情与条目ID，保存靶点关联导出；处方出处和剂量另从处方资料确认。具体字段和表格见下方SymMap操作单。',
+    '本案例使用SymMap（研究者已确认）。逐味核对药材详情与条目ID，保存靶点关联导出；处方出处和剂量另从处方资料确认。具体字段见本页SymMap操作单，不另填一套通用表。',
     '本表一行是一味药材；source_file对应原始导出。来源已由研究者确认是SymMap，不再把来源列为未知。species=Homo sapiens为导入脚本统一填写的靶点研究设定，不是药材基原或逐条物种审核结果。',
     '已知来源为SymMap；尚需补齐药材详情ID/URL、实际检索日期、版本与处方出处。没有保存的记录留空并说明，不能猜填。',
     '本站对应：用本课药材登记模板补齐出处，再整理下游关系表。'),
@@ -147,8 +147,5 @@ def render_case_step(section, step):
             st.dataframe(flags, hide_index=True, width='stretch')
         st.warning('待补/不可推断：'+missing)
         st.caption('传统路线是本课推荐操作，不是已确认的原研究操作日志。补齐记录后才能开展同输入、同方法的数值复核。')
-        if key == 'herbs':
-            from src.symmap_guide import render_symmap_workflow
-            render_symmap_workflow()
         st.download_button('下载本步案例解析与文件校验值', companion_markdown(key,digest,len(table)).encode('utf-8-sig'),
                            f'wujisan_case_{key}.md', 'text/markdown', key='case_companion_'+key)

@@ -7,7 +7,10 @@ def test_course_and_labs_render():
     at = open_route("learn_home")
     at.button(key="start_learn_collection").click().run()
     assert not at.exception
-    assert any(header.value == "最终表格长什么样？" for header in at.subheader)
+    assert any(header.value == "SymMap具体怎么查、怎么整理？" for header in at.subheader)
+    assert not any("compound_targets_standardized.csv" in block.label for block in at.expander)
+    at.radio(key="collection_route").set_value("其他来源的成分—靶点路线").run()
+    assert any(header.value == "资料审核工作表（不是分析程序的直接输入）" for header in at.subheader)
     assert any("compound_targets_standardized.csv" in block.label for block in at.expander)
     at.button(key="nav_lesson_steps").click().run()
     selector = next(item for item in at.selectbox if len(item.options) == len(LESSONS))

@@ -159,6 +159,15 @@ def render_collection_guide():
     import streamlit as st
 
     st.subheader("资料检索 → UniProt：手把手资料准备")
+    route = st.radio("本次用哪条资料整理路线？", ["SymMap药材—靶点（五积散案例）", "其他来源的成分—靶点路线"], key="collection_route")
+    if route.startswith("SymMap"):
+        from src.symmap_guide import render_symmap_workflow
+        from src.case_companion import render_case_step
+        render_symmap_workflow()
+        with st.expander("五积散归档对照（不是需要再填的一套表）"):
+            for step in (0, 3, 5):
+                render_case_step("collection", step)
+        return
     st.info("目标不是下载越多越好，而是形成可追溯的药材—成分—原始靶点—标准基因关系。完成A至F后，再做疾病基因交集。本站不代替外部检索或人工身份审核。")
     st.markdown("**交接顺序**：处方/药材表 → 药材成分表 → 成分结构核对 → 原始靶点表 → 分类型ID清单 → UniProt映射表 → 标准关系表与去重基因清单。")
     st.caption("建议分raw/（原始下载）、working/（清洗和审核）、exports/（下游输入）。原始文件不覆盖；每次检索记录数据库版本、日期、关键词、筛选条件与使用许可。")
@@ -173,7 +182,8 @@ def render_collection_guide():
             st.caption("下方表格规范对应文件：" + step["table"])
             from src.case_companion import render_case_step
             render_case_step("collection", index)
-    st.subheader("最终表格长什么样？")
+    st.subheader("资料审核工作表（不是分析程序的直接输入）")
+    st.caption("仅适用于当前成分—靶点路线；若使用SymMap药材靶点表，切换上方路线，不必再填这一套。")
     st.warning("以下示例只展示填写格式，使用虚构编号与占位关系；空白表示尚未获得信息。不要当作可运行数据或真实药材靶点证据。CSV保存为UTF-8，日期YYYY-MM-DD，ID按文本保存，一格一个值、不合并单元格。")
     for filename, grain, fields in TABLE_SCHEMAS:
         with st.expander(filename + " · " + grain):
