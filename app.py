@@ -12,12 +12,20 @@ HerbInsight —— 中药复方多组学机制分析平台
 """
 
 import os
+from io import BytesIO
 import yaml
 import pandas as pd
 import streamlit as st
 
 
 from src import project_manager
+from src.enrichment_engine import (
+    example_files,
+    extract_genes,
+    read_table,
+    run_over_representation,
+    split_gene_text,
+)
 
 # ---------------------------------------------------------------------------
 # 全局配置
@@ -104,6 +112,61 @@ def page_user_guide(cfg, project_id):
         data=guide_text.encode("utf-8-sig"),
         file_name="HerbInsight_平台使用指南.md",
         mime="text/markdown",
+    )
+
+
+# ---------------------------------------------------------------------------
+# 页面：教学实训中心
+# ---------------------------------------------------------------------------
+def page_learning_center(cfg, project_id):
+    st.header("教学实训中心")
+    st.write(
+        "从数据库检索开始，沿着标准科研流程边学边做。"
+        "每个实验都包含原理、数据模板、参数解释、现场计算、"
+        "结果解读和可下载的实验记录。"
+    )
+
+    st.progress(2 / 8)
+    st.caption("平台建设进度：已开放 2 个实训环节，其余实验正在接入。")
+
+    stages = [
+        ("1", "药材与成分收集", "记录数据库、版本、检索日期和筛选标准", "教学指南", "建设中"),
+        ("2", "靶点标准化", "统一物种、UniProt ID 与基因符号并检查重复值", "数据治理", "建设中"),
+        ("3", "疾病基因与交集", "整合 GeneCards、DisGeNET、OMIM 等多来源证据", "集合运算", "建设中"),
+        ("4", "网络药理学", "构建药材—成分—靶点网络并计算拓扑指标", "真实计算", "下一阶段"),
+        ("5", "GO/KEGG 富集", "理解超几何检验、背景集与 FDR，上传数据现场计算", "真实计算", "已开放"),
+        ("6", "机器学习", "规范划分训练/测试集，避免过拟合与数据泄漏", "真实计算", "计划中"),
+        ("7", "孟德尔随机化", "完成等位基因协调、IVW及敏感性分析", "真实计算", "计划中"),
+        ("8", "计算扰动模拟", "评估虚拟敲除前后的网络与表达变化", "真实计算", "计划中"),
+    ]
+
+    for start in range(0, len(stages), 2):
+        columns = st.columns(2)
+        for column, (number, title, description, kind, status) in zip(
+            columns, stages[start:start + 2]
+        ):
+            with column:
+                with st.container(border=True):
+                    st.subheader(f"{number}. {title}")
+                    st.write(description)
+                    tag1, tag2 = st.columns(2)
+                    tag1.caption(f"类型：{kind}")
+                    tag2.caption(f"状态：{status}")
+
+    st.subheader("推荐学习路径")
+    st.markdown(
+        """
+1. **先看五积散示范项目**：认识每一步的输入和输出。
+2. **下载教学模板**：不要直接拿杂乱数据开始分析。
+3. **运行小型示例**：理解参数变化怎样影响结果。
+4. **上传自己的数据**：先通过字段和质量检查，再执行算法。
+5. **完成结果解读**：回答“结果说明什么、不能说明什么”。
+6. **导出实验记录**：保留数据来源、参数、方法和局限性。
+        """
+    )
+    st.info(
+        "现在可进入左侧“GO/KEGG 教学实验”，先用内置示例完成一次"
+        "真正的过度富集分析，再替换成自己的数据。"
     )
 
 # ---------------------------------------------------------------------------
@@ -1525,7 +1588,7 @@ def page_ppi(cfg, project_id):
 # ---------------------------------------------------------------------------
 # 页面：GO/KEGG 富集分析
 # ---------------------------------------------------------------------------
-def page_enrichment(cfg, project_id):
+def page_enrichment_results(cfg, project_id):
     st.header("GO / KEGG 功能富集分析")
 
     files = cfg.get("data_files", {})
@@ -1909,6 +1972,226 @@ def page_enrichment(cfg, project_id):
                     "请放宽筛选条件。"
                 )
    
+
+def _enrichment_method_text(diagnostics, minimum_overlap, fdr_limit):
+    return f"""# GO/KEGG 过度富集分析实验记录
+
+## 方法
+以用户上传的目标基因作为样本，以背景基因作为抽样总体，使用单侧超几何检验评估每个功能条目是否出现过度富集，并采用 Benjamini-Hochberg 方法控制多重检验的错误发现率。
+
+## 本次参数与数据质量
+- 有效目标基因：{diagnostics['target_count']}
+- 背景基因：{diagnostics['background_count']}
+- 注释关系：{diagnostics['annotation_count']}
+- 被检验条目：{diagnostics['term_count']}
+- 最小命中基因数：{minimum_overlap}
+- FDR 阈值：{fdr_limit}
+- 因不在背景集中而忽略的目标基因：{diagnostics['ignored_target_count']}
+
+## 解释边界
+显著富集表示目标基因在某功能条目中出现得比随机期望更频繁，不等于该通路已被实验验证，也不证明因果关系。结论会受到背景基因、注释数据库版本、基因标识标准化和筛选阈值影响。
+"""
+
+
+def page_enrichment_lab(cfg, project_id):
+    st.subheader("GO/KEGG 在线富集实验室")
+    st.write(
+        "上传目标基因、背景基因和“基因—条目”注释表，平台将现场执行"
+        "超几何检验与 FDR 校正，而不是展示预先算好的结果。"
+    )
+
+    learn_tab, prepare_tab, calculate_tab, interpret_tab = st.tabs(
+        ["① 学原理", "② 备数据", "③ 做分析", "④ 读结果"]
+    )
+
+    with learn_tab:
+        st.markdown(
+            """
+### 这个实验在回答什么？
+
+假设背景中有一部分基因属于某条通路。如果你的目标基因中属于该通路的
+基因明显多于随机抽样的期望数量，就称为“过度富集”。
+
+**目标基因**可以是共同靶点、差异基因或模型筛选基因；**背景基因**应是
+本次研究中实际可能被选中的全部基因，而不是随意使用全基因组。
+
+计算步骤：统一基因符号并去重；限制在背景集内；执行单侧超几何检验；
+使用 Benjamini–Hochberg 方法校正；结合 FDR、富集倍数和命中数解释。
+            """
+        )
+        st.warning(
+            "不要只看 P 值。背景集选择不当、少量基因造成的极高富集倍数，"
+            "以及数据库注释偏倚，都可能导致误读。"
+        )
+
+    templates = example_files()
+    with prepare_tab:
+        st.markdown(
+            """
+### 三个输入文件
+
+- `target_genes.csv`：至少包含 `gene_symbol`，每行一个目标基因。
+- `background_genes.csv`：至少包含 `gene_symbol`；可不上传，此时以注释集中全部基因为背景。
+- `term_annotations.csv`：每行是一条基因—功能条目关系，必须包含 `gene_symbol`、`term_id`、`term_name`，可选 `category`。
+
+注释表可以来自经过许可的 GO/KEGG 注释资源。提交作业时应记录数据库名称、版本、下载日期和物种。
+            """
+        )
+        download_columns = st.columns(3)
+        for column, (name, content) in zip(download_columns, templates.items()):
+            column.download_button(
+                f"下载 {name}", content, file_name=name, mime="text/csv",
+                key=f"download_{name}", use_container_width=True,
+            )
+        st.dataframe(
+            pd.read_csv(BytesIO(templates["term_annotations.csv"])),
+            use_container_width=True, hide_index=True,
+        )
+
+    with calculate_tab:
+        use_example = st.toggle(
+            "使用内置教学示例", value=True,
+            help="首次学习建议打开；关闭后可上传自己的三个文件。",
+        )
+        target_file = background_file = annotation_file = None
+        pasted_genes = ""
+        if not use_example:
+            left, middle, right = st.columns(3)
+            target_file = left.file_uploader(
+                "目标基因表", type=["csv", "tsv", "txt", "xlsx", "xls"],
+                key="ora_target_file",
+            )
+            background_file = middle.file_uploader(
+                "背景基因表（可选）", type=["csv", "tsv", "txt", "xlsx", "xls"],
+                key="ora_background_file",
+            )
+            annotation_file = right.file_uploader(
+                "GO/KEGG 注释表", type=["csv", "tsv", "txt", "xlsx", "xls"],
+                key="ora_annotation_file",
+            )
+            pasted_genes = st.text_area(
+                "也可以直接粘贴目标基因", placeholder="TNF, IL6, AKT1\nMAPK1",
+                help="上传目标基因表和粘贴内容同时存在时，平台会合并并去重。",
+            )
+
+        parameter1, parameter2 = st.columns(2)
+        minimum_overlap = parameter1.number_input(
+            "最小命中基因数", min_value=1, max_value=20, value=2, step=1
+        )
+        fdr_limit = parameter2.number_input(
+            "FDR 阈值", min_value=0.001, max_value=1.0, value=0.05,
+            step=0.01, format="%.3f"
+        )
+
+        if st.button("开始计算富集分析", type="primary", use_container_width=True):
+            try:
+                if use_example:
+                    target_data = pd.read_csv(BytesIO(templates["target_genes.csv"]))
+                    background_data = pd.read_csv(BytesIO(templates["background_genes.csv"]))
+                    annotations = pd.read_csv(BytesIO(templates["term_annotations.csv"]))
+                    target_genes, _ = extract_genes(target_data)
+                    background_genes, _ = extract_genes(background_data)
+                else:
+                    target_genes = split_gene_text(pasted_genes)
+                    if target_file is not None:
+                        uploaded_targets, _ = extract_genes(read_table(target_file))
+                        target_genes |= uploaded_targets
+                    if not target_genes:
+                        raise ValueError("请上传目标基因表或粘贴目标基因。")
+                    if annotation_file is None:
+                        raise ValueError("请上传 GO/KEGG 注释表。")
+                    annotations = read_table(annotation_file)
+                    background_genes = None
+                    if background_file is not None:
+                        background_genes, _ = extract_genes(read_table(background_file))
+
+                result, diagnostics = run_over_representation(
+                    target_genes, annotations, background_genes, int(minimum_overlap)
+                )
+                st.session_state["ora_result"] = result
+                st.session_state["ora_diagnostics"] = diagnostics
+                st.session_state["ora_parameters"] = {
+                    "minimum_overlap": int(minimum_overlap),
+                    "fdr_limit": float(fdr_limit),
+                }
+            except Exception as error:
+                st.error(f"计算未完成：{error}")
+
+        result = st.session_state.get("ora_result")
+        diagnostics = st.session_state.get("ora_diagnostics")
+        parameters = st.session_state.get("ora_parameters", {})
+        if result is not None and diagnostics is not None:
+            st.success("计算完成。以下结果由本次输入数据现场生成。")
+            metric_columns = st.columns(4)
+            metric_columns[0].metric("有效目标基因", diagnostics["target_count"])
+            metric_columns[1].metric(
+                "有效背景基因",
+                diagnostics["background_count"],
+                help="上传背景基因与注释表基因的交集，只有这些基因进入统计总体。",
+            )
+            metric_columns[2].metric("检验条目", diagnostics["term_count"])
+            metric_columns[3].metric("忽略目标", diagnostics["ignored_target_count"])
+
+            active_fdr = parameters.get("fdr_limit", float(fdr_limit))
+            significant = result[result["p_adjust"] <= active_fdr].copy()
+            st.write(f"FDR ≤ {active_fdr:g} 的条目：**{len(significant)}**")
+            if diagnostics["ignored_target_count"]:
+                with st.expander("查看未进入计算的目标基因"):
+                    st.write("、".join(diagnostics["ignored_targets"]))
+
+            display_result = significant if not significant.empty else result
+            if display_result.empty:
+                st.warning("没有条目达到最小命中数，请检查注释集或降低该参数。")
+            else:
+                st.dataframe(display_result, use_container_width=True, hide_index=True)
+                _plot_bubble(display_result, "在线计算富集气泡图")
+                st.download_button(
+                    "下载本次完整计算结果（CSV）",
+                    result.to_csv(index=False).encode("utf-8-sig"),
+                    "online_enrichment_results.csv", "text/csv",
+                    use_container_width=True,
+                )
+                method_text = _enrichment_method_text(
+                    diagnostics, parameters.get("minimum_overlap", int(minimum_overlap)),
+                    active_fdr,
+                )
+                st.download_button(
+                    "下载实验方法与质量记录（Markdown）",
+                    method_text.encode("utf-8-sig"),
+                    "enrichment_experiment_record.md", "text/markdown",
+                    use_container_width=True,
+                )
+
+    with interpret_tab:
+        st.markdown(
+            """
+### 结果解读清单
+
+1. **先看输入质量**：有多少目标基因被背景集接纳？忽略了哪些基因？
+2. **再看 FDR**：`p_adjust` 是多重检验校正后的显著性。
+3. **同时看命中数**：只有一两个基因支撑的条目需要谨慎。
+4. **查看富集倍数**：大于 1 表示高于随机期望，小条目可能夸大倍数。
+5. **检查命中基因**：相关通路是否由同一批高频基因反复驱动？
+6. **回到研究问题**：统计富集不是机制验证，应结合文献与独立实验。
+
+### 课堂思考题
+
+- 更换为实验实际检测到的背景基因后，结果如何变化？
+- 把最小命中数从 1 调到 3，哪些条目消失？为什么？
+- 为什么不能把最小的 P 值直接称为“最重要的通路”？
+            """
+        )
+
+
+def page_enrichment(cfg, project_id):
+    st.header("GO / KEGG 富集学习与分析")
+    lab_tab, case_tab = st.tabs(["教学实验：上传并计算", "五积散示范结果"])
+    with lab_tab:
+        page_enrichment_lab(cfg, project_id)
+    with case_tab:
+        page_enrichment_results(cfg, project_id)
+
+
 def _plot_bubble(df, title):
     import numpy as np
     import plotly.express as px
@@ -5622,12 +5905,13 @@ MR 结果还需要结合工具变量强度、异质性、水平多效性
 # 主程序
 # ---------------------------------------------------------------------------
 PAGES = {
+    "教学实训中心": page_learning_center,
     "项目管理": page_project_management,
     "项目首页": page_home,
     "药材-候选靶点": page_herbs,
     "疾病基因与交集": page_overlap,
     "网络药理学 / PPI": page_ppi,
-    "GO/KEGG 富集": page_enrichment,
+    "GO/KEGG 教学实验": page_enrichment,
     "转录组验证": page_transcriptome,
     "机器学习结果": page_machine_learning,
     "孟德尔随机化": page_mendelian_randomization,
