@@ -26,6 +26,7 @@ from src.enrichment_engine import (
     run_over_representation,
     split_gene_text,
 )
+from src.network_engine import analyze_network, example_edge_file, read_edge_table
 
 # ---------------------------------------------------------------------------
 # 全局配置
@@ -126,14 +127,14 @@ def page_learning_center(cfg, project_id):
         "结果解读和可下载的实验记录。"
     )
 
-    st.progress(1 / 11)
-    st.caption("在线实验建设进度：已开放 1 个真实计算实验，其余模块按路线逐步接入。")
+    st.progress(2 / 11)
+    st.caption("在线实验建设进度：已开放 2 个真实计算实验，其余模块按路线逐步接入。")
 
     stages = [
         ("1", "药材与成分收集", "记录数据库、版本、检索日期和筛选标准", "教学指南", "建设中"),
         ("2", "靶点标准化", "统一物种、UniProt ID 与基因符号并检查重复值", "数据治理", "建设中"),
         ("3", "疾病基因与交集", "整合 GeneCards、DisGeNET、OMIM 等多来源证据", "集合运算", "建设中"),
-        ("4", "网络药理学", "构建药材—成分—靶点网络并计算拓扑指标", "真实计算", "下一阶段"),
+        ("4", "网络药理学", "构建药材—成分—靶点网络并计算拓扑指标", "真实计算", "已开放"),
         ("5", "GO/KEGG 富集", "理解超几何检验、背景集与 FDR，上传数据现场计算", "真实计算", "已开放"),
         ("6", "机器学习", "规范划分训练/测试集，避免过拟合与数据泄漏", "真实计算", "计划中"),
         ("7", "孟德尔随机化", "完成等位基因协调、IVW及敏感性分析", "真实计算", "计划中"),
@@ -183,8 +184,8 @@ def page_learning_center(cfg, project_id):
         """
     )
     st.info(
-        "现在可进入左侧“GO/KEGG 教学实验”，先用内置示例完成一次"
-        "真正的过度富集分析，再替换成自己的数据。"
+        "现在可进入左侧“网络药理学教学实验”或“GO/KEGG 教学实验”，"
+        "先运行内置示例理解输入、参数和输出，再替换成自己的数据。"
     )
 
 # ---------------------------------------------------------------------------
@@ -1205,7 +1206,7 @@ def page_overlap(cfg, project_id):
 # ---------------------------------------------------------------------------
 # 页面：网络药理学 / PPI
 # ---------------------------------------------------------------------------
-def page_ppi(cfg, project_id):
+def page_ppi_results(cfg, project_id):
     import networkx as nx
     import plotly.graph_objects as go
 
@@ -1623,6 +1624,252 @@ def page_ppi(cfg, project_id):
         "用于描述网络拓扑位置，可辅助确定候选核心靶点；"
         "拓扑中心性不代表治疗因果关系，仍需实验或多组学证据验证。"
     )
+
+
+def _plot_uploaded_network(graph, nodes, title):
+    import networkx as nx
+    import plotly.graph_objects as go
+
+    position = nx.spring_layout(graph, seed=42, weight="weight", iterations=100)
+    edge_x, edge_y = [], []
+    for source, target in graph.edges():
+        x0, y0 = position[source]
+        x1, y1 = position[target]
+        edge_x.extend([x0, x1, None])
+        edge_y.extend([y0, y1, None])
+    edge_trace = go.Scatter(
+        x=edge_x, y=edge_y, mode="lines",
+        line={"width": 1, "color": "rgba(91, 125, 111, 0.35)"},
+        hoverinfo="none", name="关系", showlegend=False,
+    )
+
+    lookup = nodes.set_index("node_id")
+    node_types = sorted(nodes["node_type"].astype(str).unique())
+    colors = ["#2E7D5B", "#D18B35", "#3E75A6", "#A65353", "#7A65A8", "#64746D"]
+    traces = [edge_trace]
+    for index, node_type in enumerate(node_types):
+        type_nodes = [
+            node for node in graph.nodes()
+            if str(lookup.loc[node, "node_type"]) == node_type
+        ]
+        hover = [
+            f"<b>{node}</b><br>类型：{node_type}<br>"
+            f"Degree：{int(lookup.loc[node, 'degree'])}<br>"
+            f"Betweenness：{lookup.loc[node, 'betweenness']:.4f}<br>"
+            f"Closeness：{lookup.loc[node, 'closeness']:.4f}"
+            for node in type_nodes
+        ]
+        traces.append(
+            go.Scatter(
+                x=[position[node][0] for node in type_nodes],
+                y=[position[node][1] for node in type_nodes],
+                mode="markers+text", text=type_nodes, textposition="top center",
+                hovertext=hover, hoverinfo="text", name=node_type,
+                marker={
+                    "size": [14 + 4 * int(lookup.loc[node, "degree"]) for node in type_nodes],
+                    "color": colors[index % len(colors)],
+                    "line": {"width": 1, "color": "white"},
+                },
+            )
+        )
+    figure = go.Figure(traces)
+    figure.update_layout(
+        title=title, height=680, hovermode="closest",
+        margin={"l": 10, "r": 10, "t": 55, "b": 10},
+        xaxis={"visible": False}, yaxis={"visible": False},
+        legend={"title": "节点类型"},
+    )
+    st.plotly_chart(figure, use_container_width=True)
+
+
+def _network_method_text(diagnostics, minimum_weight, directed):
+    network_type = "有向网络" if directed else "无向网络"
+    return f"""# 网络药理学在线实验记录
+
+## 方法
+根据上传的边表构建{network_type}。删除自环，以节点对为单位合并重复关系并保留最高权重，随后计算 Degree、Degree Centrality、Betweenness Centrality、Closeness Centrality、连通分量和网络密度。
+
+## 数据与参数
+- 原始有效边记录：{diagnostics['uploaded_edge_count']}
+- 最低权重阈值：{minimum_weight}
+- 最终节点：{diagnostics['node_count']}
+- 最终边：{diagnostics['edge_count']}
+- 重复边：{diagnostics['duplicate_count']}
+- 自环：{diagnostics['self_loop_count']}
+- 连通分量：{diagnostics['component_count']}
+- 网络密度：{diagnostics['density']:.6f}
+
+## 解释边界
+中心性衡量节点在当前网络结构中的位置，受数据来源、纳入规则和网络完整性影响。中心节点是优先研究候选，不等于关键治疗靶点，也不能单独证明因果关系。
+"""
+
+
+def page_network_lab(cfg, project_id):
+    st.subheader("网络药理学在线实验室")
+    st.write(
+        "上传药材—成分—靶点或蛋白互作边表，平台将现场清洗关系、"
+        "构建网络并计算拓扑指标。"
+    )
+    learn_tab, prepare_tab, calculate_tab, interpret_tab = st.tabs(
+        ["① 学原理", "② 备数据", "③ 做分析", "④ 读结果"]
+    )
+    with learn_tab:
+        st.markdown(
+            """
+### 网络药理学在做什么？
+
+网络把研究对象表示为**节点**，把它们之间的关系表示为**边**。
+药材—成分—靶点网络用于整理多层关联，PPI 网络用于观察蛋白之间的互作结构。
+
+- **Degree**：直接相连的边数，反映局部连接数量；
+- **Degree Centrality**：Degree 按网络规模标准化后的结果；
+- **Betweenness**：节点位于其他节点最短路径上的程度；
+- **Closeness**：节点到网络中其他节点的平均距离是否较短；
+- **连通分量**：彼此可到达的一组节点，可用于发现孤立子网络。
+            """
+        )
+        st.warning(
+            "中心性高只表示节点在当前网络中位置突出。数据库收录偏倚、"
+            "网络阈值和研究较多的基因都会影响排名。"
+        )
+
+    example_content = example_edge_file()
+    with prepare_tab:
+        st.markdown(
+            """
+### 边表格式
+
+每行表示一条关系。必要字段为 `source` 和 `target`；推荐增加：
+
+- `source_type`、`target_type`：如复方、药材、成分、靶点；
+- `relation`：如包含、含有、作用或 PPI；
+- `weight`：关系置信度，未提供时默认为 1。
+
+同名节点会被视为同一个实体，因此应在上传前统一药材名、成分 ID 和基因符号。
+            """
+        )
+        st.download_button(
+            "下载网络边表示例（CSV）", example_content,
+            file_name="network_edges_example.csv", mime="text/csv",
+            use_container_width=True,
+        )
+        st.dataframe(
+            pd.read_csv(BytesIO(example_content)),
+            use_container_width=True, hide_index=True,
+        )
+
+    with calculate_tab:
+        use_example = st.toggle(
+            "使用内置教学示例", value=True, key="network_use_example",
+            help="首次学习建议使用内置的复方—药材—成分—靶点小型网络。",
+        )
+        uploaded_edges = None
+        if not use_example:
+            uploaded_edges = st.file_uploader(
+                "上传网络边表", type=["csv", "tsv", "txt", "xlsx", "xls"],
+                key="network_edge_upload",
+            )
+        option1, option2 = st.columns(2)
+        minimum_weight = option1.number_input(
+            "最低关系权重", min_value=0.0, value=0.0, step=0.05,
+            help="低于该数值的边不会进入网络。无权重数据可保持为0。",
+        )
+        directed = option2.toggle(
+            "构建有向网络", value=False,
+            help="药材→成分等方向有明确含义时可开启；PPI通常使用无向网络。",
+        )
+
+        if st.button("开始构建并分析网络", type="primary", use_container_width=True):
+            try:
+                if use_example:
+                    edge_data = pd.read_csv(BytesIO(example_content))
+                elif uploaded_edges is None:
+                    raise ValueError("请上传网络边表。")
+                else:
+                    edge_data = read_edge_table(uploaded_edges)
+                nodes, edges, graph, diagnostics = analyze_network(
+                    edge_data, float(minimum_weight), bool(directed)
+                )
+                st.session_state["network_nodes"] = nodes
+                st.session_state["network_edges"] = edges
+                st.session_state["network_graph"] = graph
+                st.session_state["network_diagnostics"] = diagnostics
+                st.session_state["network_parameters"] = {
+                    "minimum_weight": float(minimum_weight), "directed": bool(directed)
+                }
+            except Exception as error:
+                st.error(f"网络分析未完成：{error}")
+
+        nodes = st.session_state.get("network_nodes")
+        edges = st.session_state.get("network_edges")
+        graph = st.session_state.get("network_graph")
+        diagnostics = st.session_state.get("network_diagnostics")
+        parameters = st.session_state.get("network_parameters", {})
+        if nodes is not None and diagnostics is not None and graph is not None:
+            st.success("网络构建完成。以下指标由本次边表现场计算。")
+            metrics = st.columns(4)
+            metrics[0].metric("节点", diagnostics["node_count"])
+            metrics[1].metric("关系边", diagnostics["edge_count"])
+            metrics[2].metric("连通分量", diagnostics["component_count"])
+            metrics[3].metric("网络密度", f"{diagnostics['density']:.3f}")
+
+            if diagnostics["duplicate_count"] or diagnostics["self_loop_count"]:
+                st.info(
+                    f"质量检查：合并重复边 {diagnostics['duplicate_count']} 条，"
+                    f"删除自环 {diagnostics['self_loop_count']} 条。"
+                )
+            result_tab, graph_tab = st.tabs(["拓扑指标排名", "交互网络"])
+            with result_tab:
+                st.dataframe(nodes, use_container_width=True, hide_index=True)
+            with graph_tab:
+                _plot_uploaded_network(graph, nodes, "本次上传数据构建的网络")
+
+            download1, download2 = st.columns(2)
+            download1.download_button(
+                "下载节点拓扑指标（CSV）",
+                nodes.to_csv(index=False).encode("utf-8-sig"),
+                "network_node_metrics.csv", "text/csv", use_container_width=True,
+            )
+            download2.download_button(
+                "下载清洗后的边表（CSV）",
+                edges.to_csv(index=False).encode("utf-8-sig"),
+                "network_clean_edges.csv", "text/csv", use_container_width=True,
+            )
+            method_text = _network_method_text(
+                diagnostics,
+                parameters.get("minimum_weight", minimum_weight),
+                parameters.get("directed", directed),
+            )
+            st.download_button(
+                "下载实验方法与质量记录（Markdown）",
+                method_text.encode("utf-8-sig"), "network_experiment_record.md",
+                "text/markdown", use_container_width=True,
+            )
+
+    with interpret_tab:
+        st.markdown(
+            """
+### 结果解读顺序
+
+1. 先看清洗提示，确认重复边、自环和权重阈值是否符合预期；
+2. 检查连通分量，避免把多个互不相连的子网络混为一个机制；
+3. 比较 Degree 与 Betweenness，识别“连接多”和“桥梁型”节点；
+4. 回查核心节点由哪些原始关系支持，而不是只报告排名；
+5. 使用不同阈值重复分析，观察核心节点是否稳定；
+6. 将网络结果与转录组、MR或实验结果交叉验证。
+
+### 课堂任务
+
+- 把最低权重逐步提高，网络密度和核心节点如何变化？
+- 同一张边表分别构建有向和无向网络，Degree 的含义有何不同？
+- 为什么文献研究较多的蛋白可能更容易成为网络中心？
+            """
+        )
+
+
+def page_ppi(cfg, project_id):
+    st.header("网络药理学教学实验")
+    page_network_lab(cfg, project_id)
 
 # ---------------------------------------------------------------------------
 # 页面：GO/KEGG 富集分析
@@ -5962,11 +6209,12 @@ MR 结果还需要结合工具变量强度、异质性、水平多效性
 # ---------------------------------------------------------------------------
 PAGES = {
     "教学实训中心": page_learning_center,
+    "网络药理学教学实验": page_ppi,
     "项目管理": page_project_management,
     "项目首页": page_home,
     "药材-候选靶点": page_herbs,
     "疾病基因与交集": page_overlap,
-    "网络药理学 / PPI": page_ppi,
+    "网络药理学 / PPI": page_ppi_results,
     "GO/KEGG 教学实验": page_enrichment,
     "转录组验证": page_transcriptome,
     "机器学习结果": page_machine_learning,
@@ -5980,6 +6228,7 @@ PAGES = {
 NAVIGATION = {
     "教学实训": [
         "教学实训中心",
+        "网络药理学教学实验",
         "GO/KEGG 教学实验",
     ],
     "五积散案例": [
