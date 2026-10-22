@@ -37,7 +37,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECTS_DIR = os.path.join(BASE_DIR, "projects")
 
 PAGE_CONFIG = {
-    "page_title": "HerbInsight · 中药复方机制分析平台",
+    "page_title": "HerbInsight · 网络药理学教学实训",
     "page_icon": "🌿",
     "layout": "wide",
 }

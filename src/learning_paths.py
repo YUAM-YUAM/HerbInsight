@@ -8,6 +8,7 @@ from src.transcriptome_guide import transcriptome_markdown, render_transcriptome
 from src.ml_guide import ml_markdown, render_ml_guide
 from src.advanced_guides import advanced_markdown, render_advanced_course
 from src.course_delivery import capability_markdown, render_delivery
+from src.learning_exercises import render_exercise, render_learning_record
 
 RESOURCES = [
     ("TCMSP", "https://tcmsp-e.com/", "药材、成分、ADME与靶点线索", "历史常用资源；可用性、下载与授权以站点为准"),
@@ -148,7 +149,7 @@ LESSONS = [
 5. 细胞通讯通常使用带细胞注释的单细胞数据，可选择CellChat或CellPhoneDB；计算扰动选择与数据、模型假设匹配的方法。它们是按问题选用的分支。
 6. 报告写清研究问题、资料来源、筛选流程、各步参数、实际结果及解释边界。相同表达矩阵产生的多个分析不能算完全独立验证。""",
         "choices": "先完成核心网络药理学流程，再根据研究问题选择证据扩展。无需为了模块数量而运行所有方法。",
-        "platform": "五积散案例提供转录组、机器学习、MR和免疫微环境结果解读；这些扩展模块当前以案例展示为主，通用上传计算功能尚未开放。报告中心可导出现有项目报告。",
+        "platform": "转录组、机器学习、免疫评分和MR课程已提供限定设计下的上传计算，输入条件与方法边界见各课计算区。单细胞通讯仍以外部工具教学为主；计算扰动演示不等于细胞生物学敲除。五积散案例为结果解读，不能替代独立验证。",
         "checks": ["每个扩展方法都回答明确问题", "同源数据未被重复计为独立证据", "报告含原始文件、参数及局限性"],
         "links": [("GEO", "https://www.ncbi.nlm.nih.gov/geo/"), ("TwoSampleMR 文档", "https://mrcieu.github.io/TwoSampleMR/")],
     },
@@ -186,6 +187,11 @@ def _open_course_route(route_id):
 def render_course_overview():
     import pandas as pd
     import streamlit as st
+    st.subheader("HerbInsight · 从会看结果，到会完成分析")
+    st.write("面向中医药与生命科学初学者的网络药理学教学实训平台。沿着资料收集、数据整理、分析计算、结果解释完成一次可追溯的学习任务。")
+    st.info("第一次来：从01开始。已有规范数据：直接进入对应课程的计算区。五积散—溃疡性结肠炎用于案例解读，不是已证实的治疗机制或临床建议。")
+    with st.expander("这次学习要交付什么？", expanded=True):
+        st.markdown("**任务：**为一个明确的复方—疾病问题建立候选关联分析。\n\n**准备：**处方出处与物种、来源登记、药材/成分/靶点关系、疾病基因证据。\n\n**交付：**映射审核表、共同靶点、PPI边表与参数、富集结果及背景说明、包含局限性的分析记录。\n\n**完成标准：**每张结果图能追溯到输入、来源、参数和方法；能解释关联为何不等于机制。")
     st.write("先完成下面4个核心阶段，再按研究问题选择进阶证据。左侧可直接进入任一章节，无需切换模式或横向翻找。")
     cards = [
         ("01 资料检索与ID整理", "去哪查药材、成分与靶点；怎样保留证据并完成UniProt核对。", "learn_collection"),
@@ -200,6 +206,8 @@ def render_course_overview():
                 st.write(description)
                 st.button("进入学习", key="start_" + route, on_click=_open_course_route, args=(route,), width="stretch")
     st.caption("跟着课程准备资料，在PPI第7步、GO/KEGG第6步即可上传数据并计算，无需另找入口。进阶证据按研究需要选学。")
+    st.caption("在资料整理、富集、转录组和机器学习课程中，展开「纠错挑战」练习常见错误；课程内可计算，不要求先完成测验。")
+    render_learning_record()
     with st.expander("查看8步输入与产物对照"):
         st.dataframe(pd.DataFrame([
             {"阶段": lesson["title"], "准备材料": lesson["input"], "应得到的产物": lesson["output"]}
@@ -232,6 +240,13 @@ def render_compact_lessons():
 def render_course_resources():
     import pandas as pd
     import streamlit as st
+    from pathlib import Path
+    with st.expander("作品验证与演示材料（不增加学习步骤）"):
+        st.write("自动化检查验证软件行为，不证明教学效果或临床有效性。真人试用和真实数据独立复核尚需按协议完成，不能以演示结果代替。")
+        docs = Path(__file__).resolve().parents[1] / "docs"
+        for filename, label in [("reviewer_walkthrough.md", "评审演示与能力边界"), ("pilot_protocol.md", "初学者试用任务与空白记录"), ("validation_protocol.md", "真实数据复核方案"), ("contribution_disclosure.md", "原创贡献与AI使用披露模板")]:
+            st.download_button("下载" + label, (docs / filename).read_bytes(), filename, "text/markdown", key="artifact_" + filename)
+    render_learning_record()
     with st.expander("数据库入口与常用登记模板"):
         st.dataframe(pd.DataFrame(RESOURCES, columns=["资源", "官方入口", "收集资料/用途", "访问与使用说明"]), hide_index=True, width="stretch", column_config={"官方入口": st.column_config.LinkColumn("官方入口")})
         st.caption("2026-10-22核对部分官方入口与文档，入口可达不表示已验证所有下载功能。详细模板见左侧对应课程。")
@@ -263,6 +278,7 @@ def page_learning_paths(cfg, project_id, section="overview", practice=None):
     import streamlit as st
     section = section if section in SECTION_TITLES else "overview"
     st.header(SECTION_TITLES[section])
+    render_exercise(section)
     renderers = {
         "overview": render_course_overview, "collection": render_collection_guide,
         "ppi": render_ppi_guide, "enrichment": render_enrichment_guide,
