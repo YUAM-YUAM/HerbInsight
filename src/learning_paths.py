@@ -9,6 +9,7 @@ from src.ml_guide import ml_markdown, render_ml_guide
 from src.advanced_guides import advanced_markdown, render_advanced_course
 from src.course_delivery import capability_markdown, render_delivery
 from src.learning_exercises import render_exercise, render_learning_record
+from src.first_experiment import render_first_experiment
 
 RESOURCES = [
     ("TCMSP", "https://tcmsp-e.com/", "药材、成分、ADME与靶点线索", "历史常用资源；可用性、下载与授权以站点为准"),
@@ -190,7 +191,8 @@ def render_course_overview():
     st.subheader("HerbInsight · 从会看结果，到会完成分析")
     st.write("面向中医药与生命科学初学者的网络药理学教学实训平台。沿着资料收集、数据整理、分析计算、结果解释完成一次可追溯的学习任务。")
     st.info("第一次来：从01开始。已有规范数据：直接进入对应课程的计算区。五积散—溃疡性结肠炎用于案例解读，不是已证实的治疗机制或临床建议。")
-    with st.expander("这次学习要交付什么？", expanded=True):
+    render_first_experiment()
+    with st.expander("这次学习要交付什么？", expanded=False):
         st.markdown("**任务**：为一个明确的复方—疾病问题建立候选关联分析。\n\n**准备**：处方出处与物种、来源登记、药材/成分/靶点关系、疾病基因证据。\n\n**交付**：映射审核表、共同靶点、PPI边表与参数、富集结果及背景说明、包含局限性的分析记录。\n\n**完成标准**：每张结果图能追溯到输入、来源、参数和方法；能解释关联为何不等于机制。")
     st.write("先完成下面4个核心阶段，再按研究问题选择进阶证据。左侧可直接进入任一章节，无需切换模式或横向翻找。")
     cards = [

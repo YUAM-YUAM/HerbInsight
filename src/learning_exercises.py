@@ -53,6 +53,20 @@ def learning_record(state):
     }
 
 
+def learning_record_markdown(state):
+    record = learning_record(state)
+    lines = ["# HerbInsight 纠错学习记录", record["scope"],
+             "生成时间（UTC）：" + record["generated_at_utc"],
+             "首次正确与阅读反馈后改正分开记录；本记录不证明独立掌握或真实数据审核通过。"]
+    for activity in record["activities"]:
+        attempted = activity.get("attempts", 0)
+        first = "未作答" if not attempted else ("正确" if activity.get("first_attempt_passed") else "需纠正")
+        latest = "未作答" if not attempted else ("正确" if activity.get("passed") else "需纠正")
+        lines.extend(["## " + activity["title"], f"首次：{first}；最近：{latest}；提交次数：{attempted}",
+                      "处理依据：" + EXERCISES[activity["course"]]["why"]])
+    return "\n\n".join(lines)
+
+
 def render_exercise(section):
     import pandas as pd
     import streamlit as st
@@ -95,4 +109,5 @@ def render_learning_record():
     records = st.session_state.get("repair_records", {})
     passed = sum(bool(row.get("passed")) for row in records.values())
     st.caption(f"当前会话纠错练习：{passed}/{len(EXERCISES)}项最近提交正确。刷新重连可能丢失记录，请下载保存。")
+    st.download_button("下载可阅读的学习记录（Markdown）", learning_record_markdown(records).encode("utf-8-sig"), "HerbInsight_learning_record.md", "text/markdown", key="download_repair_readable")
     st.download_button("下载纠错学习记录（JSON）", json.dumps(learning_record(records), ensure_ascii=False, indent=2).encode("utf-8"), "HerbInsight_learning_record.json", "application/json", key="download_repair_record")
