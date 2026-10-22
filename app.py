@@ -126,8 +126,8 @@ def page_learning_center(cfg, project_id):
         "结果解读和可下载的实验记录。"
     )
 
-    st.progress(2 / 8)
-    st.caption("平台建设进度：已开放 2 个实训环节，其余实验正在接入。")
+    st.progress(1 / 11)
+    st.caption("在线实验建设进度：已开放 1 个真实计算实验，其余模块按路线逐步接入。")
 
     stages = [
         ("1", "药材与成分收集", "记录数据库、版本、检索日期和筛选标准", "教学指南", "建设中"),
@@ -137,7 +137,7 @@ def page_learning_center(cfg, project_id):
         ("5", "GO/KEGG 富集", "理解超几何检验、背景集与 FDR，上传数据现场计算", "真实计算", "已开放"),
         ("6", "机器学习", "规范划分训练/测试集，避免过拟合与数据泄漏", "真实计算", "计划中"),
         ("7", "孟德尔随机化", "完成等位基因协调、IVW及敏感性分析", "真实计算", "计划中"),
-        ("8", "计算扰动模拟", "评估虚拟敲除前后的网络与表达变化", "真实计算", "计划中"),
+        ("8", "免疫微环境证据", "估计免疫细胞相对富集并关联候选基因", "证据扩展", "已有案例"),
     ]
 
     for start in range(0, len(stages), 2):
@@ -152,6 +152,24 @@ def page_learning_center(cfg, project_id):
                     tag1, tag2 = st.columns(2)
                     tag1.caption(f"类型：{kind}")
                     tag2.caption(f"状态：{status}")
+
+    st.subheader("高级实验路线图")
+    advanced1, advanced2, advanced3 = st.columns(3)
+    with advanced1:
+        with st.container(border=True):
+            st.subheader("9. 单细胞基础")
+            st.write("质控、降维、聚类和细胞类型注释")
+            st.caption("细胞通讯的必要前置课程 · 规划中")
+    with advanced2:
+        with st.container(border=True):
+            st.subheader("10. 细胞通讯")
+            st.write("基于单细胞数据和配体—受体库推断细胞互作")
+            st.caption("不能由当前 bulk 表达数据直接完成 · 规划中")
+    with advanced3:
+        with st.container(border=True):
+            st.subheader("11. 计算扰动")
+            st.write("模拟基因干预后的网络或表达状态变化")
+            st.caption("属于假设生成，不等同于真实敲除实验 · 规划中")
 
     st.subheader("推荐学习路径")
     st.markdown(
@@ -673,14 +691,18 @@ def page_home(cfg, project_id):
 
     modules = cfg.get("modules", [])
 
+    implemented_modules = [
+        module for module in modules
+        if MODULE_FILES.get(module)
+    ]
     completed_modules = sum(
         check_module_data(cfg, module)
-        for module in modules
+        for module in implemented_modules
     )
 
     card8.metric(
         "已接入模块",
-        f"{completed_modules}/{len(modules)}",
+        f"{completed_modules}/{len(implemented_modules)}",
     )
 
     st.divider()
@@ -688,17 +710,34 @@ def page_home(cfg, project_id):
     # 模块状态
     st.subheader("模块完成状态")
 
-    for module in modules:
-        label = MODULE_NAMES.get(module, module)
-        data_ok = check_module_data(cfg, module)
+    core_modules = [
+        module for module in ["herbs", "target_overlap", "ppi", "enrichment"]
+        if module in modules
+    ]
+    evidence_modules = [
+        module for module in [
+            "transcriptome", "machine_learning", "mendelian_randomization",
+            "immune_infiltration", "integrated_evidence",
+        ] if module in modules
+    ]
 
-        status = (
-            "✅ 已接入数据"
-            if data_ok
-            else "⏳ 待接入数据"
-        )
+    status1, status2 = st.columns(2)
+    with status1:
+        st.markdown("#### 核心网络药理学流程")
+        for module in core_modules:
+            status = "已接入数据" if check_module_data(cfg, module) else "待接入数据"
+            st.write(f"- {MODULE_NAMES[module]}：{status}")
+    with status2:
+        st.markdown("#### 多组学证据扩展")
+        for module in evidence_modules:
+            status = "已接入数据" if check_module_data(cfg, module) else "待接入数据"
+            st.write(f"- {MODULE_NAMES[module]}：{status}")
 
-        st.write(f"- {label}：{status}")
+    st.info(
+        "细胞通讯和计算扰动属于高级实验路线，目前尚未实现，"
+        "因此不计入已接入模块。细胞通讯需要单细胞表达矩阵、"
+        "细胞类型注释和配体—受体数据库。"
+    )
 
     st.divider()
     st.info(cfg.get("disclaimer", DISCLAIMER))
@@ -714,7 +753,7 @@ MODULE_NAMES = {
     "transcriptome": "转录组验证",
     "machine_learning": "机器学习",
     "mendelian_randomization": "孟德尔随机化",
-    "immune_infiltration": "免疫浸润",
+    "immune_infiltration": "免疫微环境证据",
     "integrated_evidence": "综合证据整合",
     "cell_communication": "细胞通讯",
     "virtual_knockout": "虚拟敲除",
@@ -4188,7 +4227,24 @@ def page_immune_infiltration(cfg, project_id):
     import numpy as np
     import plotly.express as px
 
-    st.header("免疫浸润分析")
+    st.header("免疫微环境证据")
+    st.caption("研究链条位置：多组学证据扩展，不是网络药理学的必经步骤")
+    with st.expander("为什么分析免疫微环境？", expanded=True):
+        st.markdown(
+            """
+溃疡性结肠炎与免疫失衡密切相关。本模块用于观察疾病组与正常组的
+**免疫细胞相对富集模式**，并检验候选基因表达是否与这些模式相关，
+从而为网络药理学候选机制增加一个表达层面的支持证据。
+
+- **输入**：bulk 转录组表达矩阵、样本分组、免疫细胞基因集；
+- **方法**：ssGSEA 相对富集评分、组间比较、相关性和 PCA；
+- **输出**：差异免疫细胞、样本免疫图谱、候选基因—免疫关联；
+- **不能说明**：真实细胞比例、细胞之间的通讯方向或药物治疗因果效应。
+
+细胞通讯是另一类分析，通常需要单细胞数据及配体—受体数据库，
+不能根据本页结果直接推断。
+            """
+        )
 
     files = cfg.get("data_files", {})
 
@@ -5915,10 +5971,33 @@ PAGES = {
     "转录组验证": page_transcriptome,
     "机器学习结果": page_machine_learning,
     "孟德尔随机化": page_mendelian_randomization,
-    "免疫浸润": page_immune_infiltration,
+    "免疫微环境证据": page_immune_infiltration,
     "综合证据": page_integrated_evidence,
     "报告中心": page_report,
     "使用指南": page_user_guide,
+}
+
+NAVIGATION = {
+    "教学实训": [
+        "教学实训中心",
+        "GO/KEGG 教学实验",
+    ],
+    "五积散案例": [
+        "项目首页",
+        "药材-候选靶点",
+        "疾病基因与交集",
+        "网络药理学 / PPI",
+        "转录组验证",
+        "机器学习结果",
+        "孟德尔随机化",
+        "免疫微环境证据",
+        "综合证据",
+    ],
+    "项目工具": [
+        "项目管理",
+        "报告中心",
+        "使用指南",
+    ],
 }
 
 
@@ -5933,7 +6012,15 @@ def main():
     project_id = st.sidebar.selectbox("选择项目", projects)
     cfg = load_project_config(project_id)
     st.sidebar.caption(f"{cfg.get('project_name', project_id)}\n{vcfg(cfg)}")
-    page = st.sidebar.radio("功能模块", list(PAGES.keys()))
+    workspace = st.sidebar.segmented_control(
+        "使用模式",
+        list(NAVIGATION.keys()),
+        default="教学实训",
+        selection_mode="single",
+    )
+    if workspace is None:
+        workspace = "教学实训"
+    page = st.sidebar.radio("功能模块", NAVIGATION[workspace])
     st.sidebar.divider()
     st.sidebar.caption(DISCLAIMER)
 
