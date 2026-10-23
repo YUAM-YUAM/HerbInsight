@@ -2,7 +2,7 @@
 
 NAV_GROUPS = {
     "平台验证": [
-        ("blind_demo", "五积散盲测 DEMO", "平台验证 DEMO", None),
+        ("blind_demo", "独立项目盲测", "平台验证 DEMO", None),
     ],
     "核心学习与实训": [
         ("learn_home", "学习路线", "网络药理学操作课程", "overview"),

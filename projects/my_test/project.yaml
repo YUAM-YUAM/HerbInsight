@@ -1,0 +1,45 @@
+project_id: my_test
+project_name: 由我来测试
+formula_name: 五积散
+disease_name: 溃疡性结肠炎
+species: Homo sapiens
+version: "1.0"
+created_date: 2026-10-23
+project_type: independent_benchmark
+
+modules:
+  - herbs
+  - target_overlap
+  - ppi
+  - enrichment
+
+data_files:
+  herbs: inputs/herbs.csv
+  compound_targets: inputs/compound_targets.csv
+  disease_genes: inputs/disease_genes.csv
+  target_overlap: reference/target_overlap.csv
+  ppi_edges: reference/ppi_edges.csv
+  go_enrichment: reference/go_enrichment.csv
+  kegg_enrichment: reference/kegg_enrichment.csv
+
+# 本区定义测试集的输入和事后参考材料。平台代码不包含项目名称、路径或预期数量。
+benchmark:
+  protocol: outcome_independent
+  inputs:
+    herbs:
+      label: 处方药材
+      path: inputs/herbs.csv
+    compound_targets:
+      label: 药材候选靶点
+      path: inputs/compound_targets.csv
+    disease_genes:
+      label: 疾病基因
+      path: inputs/disease_genes.csv
+  references:
+    target_overlap: reference/target_overlap.csv
+    ppi_edges: reference/ppi_edges.csv
+    go_enrichment: reference/go_enrichment.csv
+    kegg_enrichment: reference/kegg_enrichment.csv
+  ppi_minimum_weight: 0.7
+
+disclaimer: 本项目用于平台独立测试与教学展示，不用于临床诊断、治疗决策或疗效宣传。

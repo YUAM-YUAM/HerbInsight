@@ -200,7 +200,7 @@ def page_project_creation(cfg, project_id):
 
 def page_blind_demo(cfg, project_id):
     from src.blind_demo import render_blind_demo
-    render_blind_demo(os.path.join(PROJECTS_DIR, "wujisan_uc"))
+    render_blind_demo(os.path.join(PROJECTS_DIR, project_id))
 
 
 def page_project_management(cfg, project_id):
@@ -6231,6 +6231,14 @@ def main():
 
     active = resolve_route(st.query_params.get("view"))
     group, label, page, section = ROUTES[active]
+    if active == "blind_demo":
+        benchmark_projects = [
+            name for name in projects
+            if isinstance(load_project_config(name).get("benchmark"), dict)
+        ]
+        current_project = st.session_state.get("active_project")
+        if benchmark_projects and current_project not in benchmark_projects:
+            st.session_state["active_project"] = benchmark_projects[0]
     st.sidebar.markdown("### 🌿 HerbInsight")
     st.sidebar.caption("按任务进入 · 无需切换使用模式")
     with st.sidebar.expander("项目与设置", expanded=False):

@@ -1,4 +1,4 @@
-"""Outcome-independent benchmark using the archived Wujisan inputs as unknown data."""
+"""Generic outcome-independent benchmark driven entirely by project configuration."""
 
 from __future__ import annotations
 
@@ -8,15 +8,9 @@ from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile
 
 import pandas as pd
+import yaml
 
 from src.network_engine import analyze_network
-
-
-INPUTS = {
-    "处方药材": "processed/herbs.csv",
-    "药材候选靶点": "processed/compound_targets.csv",
-    "疾病基因": "processed/disease_genes.csv",
-}
 
 
 def _read(root: Path, relative: str) -> pd.DataFrame:
@@ -32,13 +26,31 @@ def _genes(table: pd.DataFrame) -> set[str]:
 def run_blind_benchmark(project_root: str | Path) -> dict:
     """Run deterministic derivations first; compare with archived outputs only afterwards."""
     root = Path(project_root)
+    with (root / "project.yaml").open("r", encoding="utf-8") as stream:
+        config = yaml.safe_load(stream) or {}
+    benchmark = config.get("benchmark")
+    if not isinstance(benchmark, dict):
+        raise ValueError("该项目没有配置 benchmark，不能作为盲测项目。")
+    input_specs = benchmark.get("inputs", {})
+    required_inputs = {
+        "herbs": ("处方药材", "herb_name"),
+        "compound_targets": ("药材候选靶点", "gene_symbol"),
+        "disease_genes": ("疾病基因", "gene_symbol"),
+    }
     manifest_rows = []
     tables = {}
-    for label, relative in INPUTS.items():
+    for key, (default_label, required_column) in required_inputs.items():
+        specification = input_specs.get(key, {})
+        relative = specification.get("path") if isinstance(specification, dict) else specification
+        if not relative:
+            raise ValueError(f"benchmark.inputs 缺少 {key} 路径。")
+        label = specification.get("label", default_label) if isinstance(specification, dict) else default_label
         path = root / relative
         raw = path.read_bytes()
         table = _read(root, relative)
-        tables[label] = table
+        if required_column not in table.columns:
+            raise ValueError(f"{label}缺少 {required_column} 字段。")
+        tables[key] = table
         manifest_rows.append({
             "输入": label,
             "文件": relative,
@@ -47,33 +59,53 @@ def run_blind_benchmark(project_root: str | Path) -> dict:
             "用途": "盲测输入",
         })
 
-    formula_genes = _genes(tables["药材候选靶点"])
-    disease_genes = _genes(tables["疾病基因"])
+    formula_genes = _genes(tables["compound_targets"])
+    disease_genes = _genes(tables["disease_genes"])
     blind_genes = sorted(formula_genes & disease_genes)
     blind_overlap = pd.DataFrame({"gene_symbol": blind_genes})
 
     # Post-hoc audit starts only after the blind result above has been fixed.
-    archived = _read(root, "processed/target_overlap.csv")
-    archived_genes = _genes(archived)
+    references = benchmark.get("references", {})
+    overlap_reference = references.get("target_overlap")
+    archived_genes = _genes(_read(root, overlap_reference)) if overlap_reference else set()
     archived_subset = archived_genes <= set(blind_genes)
     unexplained_exclusions = sorted(set(blind_genes) - archived_genes)
 
-    ppi_input = _read(root, "processed/ppi_edges.csv")
-    nodes, edges, _, ppi_diagnostics = analyze_network(ppi_input, minimum_weight=0.7)
-    ppi_genes = set(nodes["node_id"].astype(str).str.strip().str.upper())
+    ppi_reference = references.get("ppi_edges")
+    if ppi_reference:
+        ppi_input = _read(root, ppi_reference)
+        nodes, edges, _, ppi_diagnostics = analyze_network(
+            ppi_input, minimum_weight=float(benchmark.get("ppi_minimum_weight", 0.0))
+        )
+    else:
+        nodes, edges = pd.DataFrame(), pd.DataFrame()
+        ppi_diagnostics = {"node_count": 0, "edge_count": 0, "component_count": 0}
+    ppi_genes = (
+        set(nodes["node_id"].astype(str).str.strip().str.upper())
+        if "node_id" in nodes.columns else set()
+    )
     ppi_from_blind = len(ppi_genes & set(blind_genes))
 
+    enrichment_inputs = benchmark.get("enrichment_inputs", {})
+    enrichment_ready = all(
+        enrichment_inputs.get(key) and (root / enrichment_inputs[key]).is_file()
+        for key in ("target", "background", "annotation")
+    )
     capabilities = pd.DataFrame([
         {"环节": "输入质控", "平台动作": "锁定文件、字段、行数和SHA256", "状态": "可独立完成", "可审计输出": "输入清单"},
         {"环节": "靶点标准化与交集", "平台动作": "统一大小写、去空值、去重后求集合交集", "状态": "可独立重算", "可审计输出": f"{len(blind_genes)}个共同基因"},
-        {"环节": "PPI拓扑", "平台动作": "对归档外部边表重新清洗、去重并计算中心性", "状态": "可重算但输入链不完整", "可审计输出": f"{ppi_diagnostics['node_count']}节点/{ppi_diagnostics['edge_count']}边"},
-        {"环节": "GO/KEGG ORA", "平台动作": "检查目标、背景和完整注释是否齐备", "状态": "暂不可独立重算", "可审计输出": "现归档仅有结果表，缺背景与完整注释"},
-        {"环节": "历史结果核查", "平台动作": "盲算完成后再比较归档结果", "状态": "发现可复现性缺口", "可审计输出": f"归档{len(archived_genes)}个；{len(unexplained_exclusions)}个排除缺少规则"},
+        {"环节": "PPI拓扑", "平台动作": "对项目声明的外部边表重新清洗、去重并计算中心性", "状态": "可重算但输入链不完整" if ppi_reference else "缺少PPI边表", "可审计输出": f"{ppi_diagnostics['node_count']}节点/{ppi_diagnostics['edge_count']}边"},
+        {"环节": "GO/KEGG ORA", "平台动作": "检查目标、背景和完整注释是否齐备", "状态": "输入齐备" if enrichment_ready else "暂不可独立重算", "可审计输出": "三类重算输入齐备" if enrichment_ready else "缺目标、背景或完整注释中的至少一项"},
+        {"环节": "历史结果核查", "平台动作": "盲算完成后再比较项目声明的参考结果", "状态": "发现可复现性缺口" if unexplained_exclusions else "一致或未提供参考", "可审计输出": f"参考{len(archived_genes)}个；{len(unexplained_exclusions)}个排除缺少规则"},
     ])
 
     return {
         "manifest": pd.DataFrame(manifest_rows),
-        "herb_count": int(tables["处方药材"]["herb_name"].dropna().astype(str).str.strip().nunique()),
+        "project_id": str(config.get("project_id", root.name)),
+        "project_name": str(config.get("project_name", root.name)),
+        "formula_name": str(config.get("formula_name", "未命名复方")),
+        "disease_name": str(config.get("disease_name", "未命名疾病")),
+        "herb_count": int(tables["herbs"]["herb_name"].dropna().astype(str).str.strip().nunique()),
         "formula_gene_count": len(formula_genes),
         "disease_gene_count": len(disease_genes),
         "blind_overlap": blind_overlap,
@@ -90,11 +122,11 @@ def run_blind_benchmark(project_root: str | Path) -> dict:
 
 def benchmark_report(result: dict) -> str:
     d = result["ppi_diagnostics"]
-    return f"""# HerbInsight 五积散盲测 DEMO 报告
+    return f"""# HerbInsight 项目盲测报告：{result['project_name']}
 
 ## 实验原则
 
-先冻结五积散药材、候选靶点和疾病基因三类输入；不读取历史共同靶点、PPI节点或富集结论来决定算法输出。平台完成盲算后，才开启历史归档核查。
+先冻结{result['formula_name']}—{result['disease_name']}项目的药材、候选靶点和疾病基因三类输入；不读取参考共同靶点、PPI节点或富集结论来决定算法输出。平台完成盲算后，才开启参考结果核查。
 
 ## 独立计算结果
 
@@ -106,11 +138,11 @@ def benchmark_report(result: dict) -> str:
 
 ## 事后归档核查
 
-历史归档共同靶点为{result['archived_overlap_count']}个，均属于本次盲算交集：{result['archived_subset']}。盲算交集中另有{len(result['unexplained_exclusions'])}个基因未进入历史归档，但当前资料没有提供完整筛选规则。因此平台不会把1047个结果强行调整为191个，也不把差异解释为生物学结论。
+参考共同靶点为{result['archived_overlap_count']}个，均属于本次盲算交集：{result['archived_subset']}。盲算交集中另有{len(result['unexplained_exclusions'])}个基因未进入参考结果，但当前资料没有提供完整筛选规则。因此平台不会为了接近参考数量而调整结果，也不把差异解释为生物学结论。
 
 ## 能力边界
 
-PPI可基于归档边表重算拓扑，但该边表只覆盖盲算交集中的{result['ppi_from_blind']}个基因，不能代表1047个基因的完整STRING检索。GO/KEGG归档只有结果表，缺少当时使用的完整背景和基因—条目注释，因此本次不宣称独立复现富集结果。
+PPI可基于项目声明的边表重算拓扑，但该边表只覆盖盲算交集中的{result['ppi_from_blind']}个基因，不能代表全部盲算基因的完整STRING检索。GO/KEGG只有在目标、背景和基因—条目注释齐备时才能独立重算。
 
 ## 评委可核查的价值
 
@@ -137,8 +169,15 @@ def benchmark_zip(result: dict) -> bytes:
 def render_blind_demo(project_root: str | Path) -> None:
     import streamlit as st
 
-    st.header("五积散盲测 DEMO")
-    st.write("把已整理的五积散资料视为未知数据，用同一套公开规则检验平台能独立完成什么、在哪一步会被证据链阻断。")
+    root = Path(project_root)
+    try:
+        with (root / "project.yaml").open("r", encoding="utf-8") as stream:
+            config = yaml.safe_load(stream) or {}
+    except (FileNotFoundError, UnicodeError, yaml.YAMLError) as error:
+        st.error("测试项目配置无法读取：" + str(error))
+        return
+    st.header("项目盲测 · " + str(config.get("project_name", root.name)))
+    st.write("把该项目的数据视为未知输入，用同一套公开规则检验平台能独立完成什么、在哪一步会被证据链阻断。")
     st.info("盲测阶段不读取历史交集数量、核心基因排序或富集结论作为目标；历史结果只在计算完成后用于归档核查。")
 
     with st.container(border=True):
@@ -151,13 +190,14 @@ def render_blind_demo(project_root: str | Path) -> None:
         )
         st.caption("成功标准：同一输入可重复得到相同输出；每个数字能追溯到文件与规则；资料不足时明确停止，不补造结论。")
 
-    if st.button("开始盲测", type="primary", key="run_wujisan_blind_demo"):
+    state_key = "blind_result_" + str(config.get("project_id", root.name))
+    if st.button("开始盲测", type="primary", key="run_project_blind_demo"):
         try:
-            st.session_state["wujisan_blind_result"] = run_blind_benchmark(project_root)
+            st.session_state[state_key] = run_blind_benchmark(project_root)
         except (FileNotFoundError, ValueError, KeyError) as error:
             st.error("盲测未启动：" + str(error))
 
-    result = st.session_state.get("wujisan_blind_result")
+    result = st.session_state.get(state_key)
     if not result:
         st.caption("点击后才会计算；页面不会预先展示历史答案。")
         return
@@ -190,8 +230,8 @@ def render_blind_demo(project_root: str | Path) -> None:
     st.download_button(
         "下载盲测证据包（ZIP）",
         benchmark_zip(result),
-        "HerbInsight_Wujisan_blind_demo.zip",
+        "HerbInsight_" + result["project_id"] + "_blind_demo.zip",
         "application/zip",
-        key="download_wujisan_blind_demo",
+        key="download_project_blind_demo",
     )
 
