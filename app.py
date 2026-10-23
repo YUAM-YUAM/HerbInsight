@@ -4,7 +4,7 @@ HerbInsight —— 中药复方多组学机制分析平台
 基于网络药理学与多组学数据融合的中药复方作用机制智能分析平台
 
 运行方式：
-    cd C:\\Users\\32330\\Desktop\\HerbInsight
+    cd <HerbInsight项目目录>
     .\\.venv\\Scripts\\Activate.ps1
     streamlit run app.py
 

@@ -66,7 +66,7 @@ ORA的BH校正在完整实际检验条目（含零命中）上执行，再按最
 ## 快速开始（Windows）
 
 ```powershell
-cd C:\Users\32330\Desktop\HerbInsight
+cd <HerbInsight项目目录>
 .\.venv\Scripts\Activate.ps1
 streamlit run app.py
 ```
@@ -117,7 +117,7 @@ HerbInsight/
 
 ## 从"原材料"目录接入数据
 
-1. 现有材料位于 `C:\Users\32330\Desktop\原材料`（只读，勿改动）。
+1. 将现有材料放在项目外的独立原材料目录（只读，勿改动）。
 2. 将整理好的 CSV 副本放入 `projects\wujisan_uc\processed\` 和 `results\`。
 3. 更新 `project.yaml` 中 `data_files` 字段。
 4. 重启 `streamlit run app.py` 即可看到数据。
