@@ -198,27 +198,32 @@ def page_project_creation(cfg, project_id):
     render_project_creation()
 
 
-def page_blind_demo(cfg, project_id):
-    from src.blind_demo import render_blind_demo
-    render_blind_demo(os.path.join(PROJECTS_DIR, project_id))
+def page_product_home(cfg, project_id):
+    from src.product_home import render_product_home
+    render_product_home(open_demo_workspace, lambda: navigate_to("learn_home"), open_wujisan_case)
+
+
+def page_project_workspace(cfg, project_id):
+    from src.project_workspace import render_project_workspace
+    render_project_workspace(os.path.join(PROJECTS_DIR, project_id), cfg)
 
 
 def page_project_management(cfg, project_id):
-    st.header("项目管理")
-    st.caption("在这里创建学习项目，然后按课程逐步收集、提交和分析资料。")
+    st.header("项目与任务")
+    st.caption("学习任务记录个人课程进度；数据项目保存可供工作台和案例页面读取的数据。")
 
     create_tab, upload_tab, status_tab = st.tabs(
-        ["我的学习项目", "归档案例数据维护", "归档案例数据状态"]
+        ["我的学习任务", "数据项目维护", "数据项目状态"]
     )
     with create_tab:
-        st.write("新建项目后，按课程逐步完成资料收集与提交。已有学习项目可在侧栏切换。")
+        st.write("新建学习任务后，按课程逐步完成资料收集与提交。已有任务可在侧栏切换。")
         if st.button("进入项目创建页", key="manager_open_creation"):
             st.query_params["view"] = "project_create"
             st.rerun()
 
     with upload_tab:
-        st.subheader("归档案例数据维护")
-        st.caption("这里修改服务器上的归档案例，不属于个人学习项目。学习资料请在对应课程的“本节任务”中提交。")
+        st.subheader("数据项目维护")
+        st.caption("这里维护服务器数据项目；个人学习资料请在对应课程的“本节任务”中提交。公开部署环境不用于保存私人研究数据。")
 
         available_projects = list_projects()
 
@@ -6158,12 +6163,13 @@ MR 结果还需要结合工具变量强度、异质性、水平多效性
 # 主程序
 # ---------------------------------------------------------------------------
 PAGES = {
-    "平台验证 DEMO": page_blind_demo,
+    "作品首页": page_product_home,
+    "分析工作台": page_project_workspace,
     "教学实训中心": page_learning_center,
     "网络药理学操作课程": page_learning_paths,
     "网络药理学教学实验": page_ppi,
     "项目管理": page_project_management,
-    "新建学习项目": page_project_creation,
+    "新建学习任务": page_project_creation,
     "项目首页": page_home,
     "药材-候选靶点": page_herbs,
     "疾病基因与交集": page_overlap,
@@ -6209,6 +6215,21 @@ def navigate_to(route_id):
     st.query_params["view"] = resolve_route(route_id)
 
 
+def open_demo_workspace():
+    """Open the first project explicitly marked as a competition demo."""
+    for name in list_projects():
+        if load_project_config(name).get("project_type") == "competition_demo":
+            st.session_state["active_project"] = name
+            break
+    st.query_params["view"] = "workspace"
+
+
+def open_wujisan_case():
+    if "wujisan_uc" in list_projects():
+        st.session_state["active_project"] = "wujisan_uc"
+    st.query_params["view"] = "case_home"
+
+
 def main():
     st.set_page_config(**PAGE_CONFIG)
     st.markdown("""<style>
@@ -6231,24 +6252,18 @@ def main():
 
     active = resolve_route(st.query_params.get("view"))
     group, label, page, section = ROUTES[active]
-    if active == "blind_demo":
-        benchmark_projects = [
-            name for name in projects
-            if isinstance(load_project_config(name).get("benchmark"), dict)
-        ]
-        current_project = st.session_state.get("active_project")
-        if benchmark_projects and current_project not in benchmark_projects:
-            st.session_state["active_project"] = benchmark_projects[0]
     st.sidebar.markdown("### 🌿 HerbInsight")
     st.sidebar.caption("按任务进入 · 无需切换使用模式")
     with st.sidebar.expander("项目与设置", expanded=False):
-        preferred = projects.index("wujisan_uc") if "wujisan_uc" in projects else 0
+        preferred_project = "wujisan_uc" if "wujisan_uc" in projects else projects[0]
+        if st.session_state.get("active_project") not in projects:
+            st.session_state["active_project"] = preferred_project
         from src.study_progress import render_project_controls
         render_project_controls()
-        project_id = st.selectbox("参考案例", projects, index=preferred, key="active_project")
-        st.caption("参考案例仅供对照，不改变你的学习项目或进度。")
+        project_id = st.selectbox("数据项目", projects, key="active_project")
+        st.caption("数据项目决定工作台与案例页面读取的文件；教学课程结构保持不变。")
     cfg = load_project_config(project_id)
-    st.sidebar.caption("参考案例：" + str(cfg.get("project_name", project_id)))
+    st.sidebar.caption("数据项目：" + str(cfg.get("project_name", project_id)))
     for group_name, entries in NAV_GROUPS.items():
         with st.sidebar.expander(group_name, expanded=group_name == group):
             for route_id, title, _, _ in entries:

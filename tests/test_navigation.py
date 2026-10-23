@@ -7,8 +7,8 @@ def test_route_registry():
     ids = [entry[0] for entries in NAV_GROUPS.values() for entry in entries]
     assert len(ids) == len(set(ids))
     assert set(COURSE_ORDER) <= set(ROUTES)
-    assert resolve_route("unknown") == "learn_home"
-    assert resolve_route(None) == "learn_home"
+    assert resolve_route("unknown") == "home"
+    assert resolve_route(None) == "home"
     assert course_neighbors("learn_home") == (None, "learn_collection")
     assert course_neighbors("resources") == ("learn_perturbation", None)
     assert course_neighbors("case_home") == (None, None)
@@ -39,4 +39,4 @@ def test_deep_link_and_invalid_route():
     assert at.query_params["view"] in ("learn_disease", ["learn_disease"])
     assert not any(button.key == "start_learn_collection" for button in at.button)
     invalid = open_route("invalid-route")
-    assert any(button.key == "start_learn_collection" for button in invalid.button)
+    assert any(button.key == "home_start_demo" for button in invalid.button)

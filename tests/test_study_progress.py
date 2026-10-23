@@ -57,7 +57,7 @@ def test_project_manager_has_one_creation_form():
     assert at.query_params['view'] == 'project_create'
     assert len([b for b in at.button if b.label == '创建并开始']) == 1
     assert not any(t.label == '项目编号' for t in at.text_input)
-    assert any(s.label == '参考案例' for s in at.selectbox)
+    assert any(s.label == '数据项目' for s in at.selectbox)
     assert not any(s.label == '当前项目' for s in at.selectbox)
 
 

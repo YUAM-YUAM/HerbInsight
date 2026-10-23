@@ -65,10 +65,10 @@ def render_project_controls():
     if pending in projects:
         st.session_state['study_selected'] = pending
     if projects:
-        st.selectbox('我的学习项目', list(projects), format_func=lambda x:projects[x]['name'], key='study_selected')
+        st.selectbox('我的学习任务', list(projects), format_func=lambda x:projects[x]['name'], key='study_selected')
     else:
-        st.caption('尚未创建学习项目，可先浏览课程与案例。')
-    if st.button('＋ 新建项目', key='open_study_creation', width='stretch'):
+        st.caption('尚未创建学习任务，可先浏览课程与案例。')
+    if st.button('＋ 新建学习任务', key='open_study_creation', width='stretch'):
         st.query_params['view'] = 'project_create'
         st.rerun()
 
@@ -79,12 +79,12 @@ def render_project_creation():
     selected = st.session_state.get('study_selected')
     if selected in projects:
         project = projects[selected]
-        st.markdown('当前学习项目：**'+project['name']+'**')
+        st.markdown('当前学习任务：**'+project['name']+'**')
         st.caption(project['formula']+' · '+project['disease'])
         if st.button('继续学习', key='resume_study'):
             st.query_params['view'] = 'learn_collection'
             st.rerun()
-    st.subheader('新建学习项目')
+    st.subheader('新建学习任务')
     st.write('先确定“研究哪一个复方、哪一种疾病”，再逐步补齐资料。现在不需要上传所有文件。')
     with st.container(border=True):
         st.markdown('#### 项目填写规范')
@@ -126,7 +126,7 @@ def render_study_progress(section, project_id):
     core = ['collection','disease','ppi','enrichment']
     core_keys = [f'{s}:{task}' for s in core for task,_,_ in TASKS[s]]
     completed = sum(key in records for key in core_keys)
-    st.caption('学习项目：'+name)
+    st.caption('学习任务：'+name)
     st.progress(completed/len(core_keys), text=f'核心资料里程碑 {completed}/{len(core_keys)} · 进阶资料按需完成')
     if st.session_state.pop('study_just_created', False):
         st.success('项目已创建。先从第一份药材登记开始，逐步积累你的研究资料。')

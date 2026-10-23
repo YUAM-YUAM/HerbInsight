@@ -1,8 +1,9 @@
 """按任务直接导航；稳定路由用于刷新和收藏，不依赖横向标签页。"""
 
 NAV_GROUPS = {
-    "平台验证": [
-        ("blind_demo", "独立项目盲测", "平台验证 DEMO", None),
+    "开始使用": [
+        ("home", "作品首页", "作品首页", None),
+        ("workspace", "分析工作台", "分析工作台", None),
     ],
     "核心学习与实训": [
         ("learn_home", "学习路线", "网络药理学操作课程", "overview"),
@@ -41,8 +42,8 @@ NAV_GROUPS = {
 }
 
 ROUTES = {route[0]: (group, *route[1:]) for group, routes in NAV_GROUPS.items() for route in routes}
-ROUTES["project_create"] = ("项目工具", "新建学习项目", "新建学习项目", None)
-DEFAULT_ROUTE = "learn_home"
+ROUTES["project_create"] = ("项目工具", "新建学习任务", "新建学习任务", None)
+DEFAULT_ROUTE = "home"
 COURSE_ORDER = ["learn_home", "learn_collection", "learn_disease", "learn_ppi", "learn_enrichment", "learn_transcriptome", "learn_ml", "learn_immune", "learn_mr", "learn_single_cell", "learn_perturbation", "resources"]
 
 
