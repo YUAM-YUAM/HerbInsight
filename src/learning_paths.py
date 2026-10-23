@@ -283,6 +283,8 @@ def page_learning_paths(cfg, project_id, section="overview", practice=None):
     import streamlit as st
     section = section if section in SECTION_TITLES else "overview"
     st.header(SECTION_TITLES[section])
+    from src.study_progress import render_study_progress
+    render_study_progress(section, project_id)
     from src.data_handoff import render_data_handoff
     render_data_handoff(section)
     if section == "transcriptome":

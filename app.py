@@ -6332,6 +6332,8 @@ def main():
         preferred = projects.index("wujisan_uc") if "wujisan_uc" in projects else 0
         project_id = st.selectbox("当前项目", projects, index=preferred, key="active_project")
         st.caption("切换项目只改变案例与项目工具的数据，教学课程通用。")
+        from src.study_progress import render_project_controls
+        render_project_controls()
     cfg = load_project_config(project_id)
     st.sidebar.caption("当前项目：" + str(cfg.get("project_name", project_id)))
     for group_name, entries in NAV_GROUPS.items():
