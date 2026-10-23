@@ -7,7 +7,7 @@ CAPABILITIES = [
     ("PPI与关系网络", "核心流程", "STRING/Cytoscape课；上传边表真实建网与中心性", "STRING/Cytoscape/NetworkX", "不自动查询STRING；不含MCC/MCODE；边表无孤立节点恢复"),
     ("GO/KEGG", "核心流程", "准备课；自备注释上传ORA、BH与结果下载", "g:Profiler/clusterProfiler", "不自动取KEGG；非GSEA；人类符号转大写"),
     ("转录组", "可选证据", "log2表达上传、独立两组Welch/BH、火山图/热图、衔接ORA", "GEO2R/limma/DESeq2/edgeR", "不处理原始计数、配对、批次/协变量；非limma"),
-    ("机器学习", "可选证据", "逻辑回归/随机森林、折内筛选、交叉验证及内部测试", "scikit-learn/tidymodels/Orange", "每位患者一个样本；无外部队列验证；特征不是因果"),
+    ("机器学习", "可选证据", "四模型公平比较、折内筛选、交叉验证及内部测试", "scikit-learn/tidymodels/Orange", "每位患者一个样本；无外部队列验证；特征不是因果"),
     ("免疫微环境", "可选证据", "表达与签名上传ssGSEA、覆盖审核、两组比较及BH", "GSVA/CIBERSORTx/immunedeconv", "不执行去卷积；评分非细胞比例"),
     ("孟德尔随机化", "可选证据", "外部LD筛选后上传、等位基因协调、F筛选、IVW/Q/逐一剔除", "TwoSampleMR/PLINK等", "无GWAS下载/LD/Egger；排除回文；假定有效工具及NOME"),
     ("单细胞基础", "高级可选", "下载/QC/注释与患者级设计课及空表", "Seurat/Scanpy", "无单细胞上传处理"),

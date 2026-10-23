@@ -5,8 +5,9 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 
-from src.expression_analysis import (read_analysis_table, differential_expression, train_classifier,
-    analysis_fingerprint, method_record, result_zip, expression_example)
+from src.expression_analysis import (MODEL_LABELS, read_analysis_table, differential_expression,
+    train_classifier, compare_classifiers, analysis_fingerprint, method_record, result_zip,
+    expression_example)
 from src.enrichment_engine import run_over_representation
 
 
@@ -145,28 +146,38 @@ def render_expression_analysis():
 
 
 def render_machine_learning():
-    st.subheader("训练与评估分类模型")
-    st.write("先保留25%样本作内部测试集；其余样本在训练集内交叉验证。去除常量、标准化和特征筛选都在训练折内完成。请使用未按全体分组预筛选的表达矩阵。")
+    st.subheader("多模型训练与规范评估")
+    st.write("平台先固定保留25%样本作内部测试集，其余样本用于训练内交叉验证。去除常量、标准化和特征筛选都只在训练折内拟合；请上传未按全体样本标签预筛选的表达矩阵。")
     data = inputs("ml_run")
     if data is None:
         st.session_state.pop("ml_computed", None); return
     expression, meta, _, control, case, source = data
-    model = st.selectbox("分类方法", ["logistic", "random_forest"], format_func=lambda x: {"logistic":"逻辑回归", "random_forest":"随机森林"}[x], key="ml_algorithm")
+    mode = st.radio("运行方式", ["四模型公平比较（推荐）", "单模型练习"], horizontal=True, key="ml_mode")
+    if mode == "单模型练习":
+        model = st.selectbox("分类方法", list(MODEL_LABELS), format_func=lambda x: MODEL_LABELS[x], key="ml_algorithm")
+        models = [model]
+    else:
+        models = list(MODEL_LABELS)
+        st.caption("比较：逻辑回归基线、Elastic Net稀疏回归、随机森林与RBF-SVM。四者使用完全相同的训练样本、测试样本和交叉验证折。")
     features = st.number_input("训练折内最多选择基因数", 2, 500, 50, key="ml_feature_count")
     seed = st.number_input("随机种子", 0, 100000, 42, key="ml_seed")
-    st.caption("每组至少8名独立患者；小样本评估波动很大。反复根据测试集挑模型会使评估偏乐观，最终仍需独立队列。这里不自动复用差异筛选后的基因，以避免数据泄漏。")
-    fp = analysis_fingerprint(expression, meta, control, case, model, features, seed, source)
+    st.caption("每组至少8名独立患者。比较模式只依据训练集交叉验证AUC选定候选模型，再打开一次内部测试集；这里不自动复用全数据差异基因。内部测试仍不是外部验证。")
+    fp = analysis_fingerprint(expression, meta, control, case, mode, models, features, seed, source)
     old = st.session_state.get("ml_computed")
     if old and old["fingerprint"] != fp:
         st.session_state.pop("ml_computed", None)
-    if st.button("训练模型并评估", key="train_model", type="primary"):
+    if st.button("运行规范建模流程", key="train_model", type="primary"):
         st.session_state.pop("ml_computed", None)
         try:
-            with st.spinner("在训练集内筛选特征并验证…"):
-                outputs = train_classifier(expression, meta, control, case, model, features, seed)
-            record = method_record("classification", {"model": model, "feature_limit": features, "seed": seed,
+            with st.spinner("固定样本划分，在训练折内筛选特征并评估…"):
+                outputs = (compare_classifiers(expression, meta, control, case, models, features, seed)
+                           if mode.startswith("四模型") else
+                           train_classifier(expression, meta, control, case, models[0], features, seed))
+            record = method_record("classification", {"mode": mode, "candidate_models": models,
+                "model_labels": {key: MODEL_LABELS[key] for key in models}, "feature_limit": features, "seed": seed,
                 "negative_group": control, "positive_group": case, "test_fraction": 0.25,
                 "preprocessing": "variance filter, standard scaling, ANOVA selection within training folds",
+                "model_selection": "training CV only; held-out test evaluated after selection" if len(models) > 1 else "single prespecified model",
                 "validation": "internal held-out test; no external validation"}, fp, source)
             st.session_state["ml_computed"] = dict(fingerprint=fp, outputs=outputs, record=record)
         except (ValueError, TypeError, ImportError) as error:
@@ -174,18 +185,32 @@ def render_machine_learning():
     run = st.session_state.get("ml_computed")
     if not run:
         return
-    metrics, predictions, importance, splits, cv = run["outputs"]
-    a,b,c = st.columns(3)
-    a.metric("训练内交叉验证平均AUC", f"{metrics['cv_auc_mean']:.3f}")
-    b.metric("内部测试集AUC", f"{metrics['test_auc']:.3f}")
-    c.metric("测试集平衡准确率", f"{metrics['test_balanced_accuracy']:.3f}")
+    if len(run["outputs"]) == 6:
+        metrics, predictions, importance, splits, cv, comparison = run["outputs"]
+        st.success(f"训练内比较完成；按预设规则选中：{metrics['model_label']}。测试集没有参与候选模型选择。")
+        shown = comparison.copy()
+        shown["cv_auc"] = shown.apply(lambda row: f"{row.cv_auc_mean:.3f} ± {row.cv_auc_sd:.3f}", axis=1)
+        st.dataframe(shown[["model_label", "cv_auc", "cv_folds"]].rename(columns={"model_label":"候选模型", "cv_auc":"训练内CV AUC（均值±SD）", "cv_folds":"折数"}), hide_index=True, width="stretch")
+    else:
+        metrics, predictions, importance, splits, cv = run["outputs"]
+        comparison = None
+        st.success(f"单模型训练完成：{metrics['model_label']}。")
+    a,b,c,d = st.columns(4)
+    a.metric("训练内CV AUC", f"{metrics['cv_auc_mean']:.3f}")
+    b.metric("内部测试AUC", f"{metrics['test_auc']:.3f}")
+    c.metric("平衡准确率", f"{metrics['test_balanced_accuracy']:.3f}")
+    d.metric("测试F1", f"{metrics['test_f1']:.3f}")
+    st.caption(f"测试平均精确率 {metrics['test_average_precision']:.3f} · 敏感度 {metrics['test_recall_sensitivity']:.3f} · 特异度 {metrics['test_specificity']:.3f} · Precision {metrics['test_precision']:.3f}")
     from sklearn.metrics import roc_curve
     fpr, tpr, _ = roc_curve(predictions.true_label, predictions.probability)
     figure = px.line(x=fpr, y=tpr, labels={"x":"假阳性率", "y":"真阳性率"}, title="内部保留测试集ROC")
     st.plotly_chart(figure, width="stretch")
     st.dataframe(pd.DataFrame(metrics["confusion_matrix"], index=["真实对照", "真实病例"], columns=["预测对照", "预测病例"]), width="stretch")
     st.dataframe(importance, hide_index=True, width="stretch")
-    st.caption("逻辑回归权重对应标准化后的特征；随机森林权重为不纯度重要性。特征权重是预测线索，不能解释为因果效应。")
-    st.download_button("下载训练评估结果与方法记录", result_zip({"test_predictions.csv": predictions,
-        "feature_weights.csv": importance, "sample_split.csv": splits, "training_cv.csv": cv,
-        "metrics.csv": pd.DataFrame([{k:v for k,v in metrics.items() if k != "confusion_matrix"}])}, run["record"]), "classification_results.zip", key="ml_results_zip")
+    st.caption("线性模型显示标准化系数，随机森林显示不纯度重要性；RBF-SVM没有可直接解释的全局原生权重。任何模型重要性都只是预测线索，不是治疗靶点或因果效应。")
+    tables = {"test_predictions.csv": predictions, "selected_features.csv": importance,
+        "sample_split.csv": splits, "training_cv_folds.csv": cv,
+        "test_metrics.csv": pd.DataFrame([{k:v for k,v in metrics.items() if k != "confusion_matrix"}])}
+    if comparison is not None:
+        tables["training_model_comparison.csv"] = comparison
+    st.download_button("下载可复核证据包（结果、划分、参数与版本）", result_zip(tables, run["record"]), "classification_evidence.zip", key="ml_results_zip")

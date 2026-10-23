@@ -5,7 +5,8 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 from src.expression_analysis import (expression_example, differential_expression, validate_expression,
-    train_classifier, read_analysis_table, result_zip, method_record, analysis_fingerprint)
+    train_classifier, compare_classifiers, MODEL_LABELS, read_analysis_table, result_zip,
+    method_record, analysis_fingerprint)
 from src.enrichment_engine import benjamini_hochberg
 from src.advanced_analysis import run_mr, mr_example, immune_ssgsea
 
@@ -62,6 +63,24 @@ def test_ml_split_reproducible_and_feature_selection_train_only():
     changed = train_classifier(perturbed, m, "control", "case", features=12)
     assert first[2].equals(changed[2]) and first[4].equals(changed[4])
     assert 0 <= train_classifier(e, m, "control", "case", model="random_forest")[0]["test_auc"] <= 1
+
+
+def test_ml_models_share_split_and_cv_select_before_test():
+    e, m, _ = expression_example()
+    output = compare_classifiers(e, m, "control", "case", features=12, seed=42)
+    metrics, predictions, importance, split, folds, comparison = output
+    assert set(comparison.model) == set(MODEL_LABELS)
+    assert folds.groupby("model").fold.count().nunique() == 1
+    assert metrics["model"] == comparison.iloc[0].model
+    assert metrics["selection_rule"].startswith("highest mean training-CV")
+    assert set(predictions.sample_id) == set(split.loc[split.split == "test", "sample_id"])
+    assert {"test_auc", "test_f1", "test_specificity", "test_recall_sensitivity"} <= set(metrics)
+    # Constants are removed safely even when the requested feature limit is larger than what remains.
+    small = e.iloc[:8].copy()
+    small.loc[1:, small.columns[1:]] = 6
+    result = train_classifier(small, m, "control", "case", model="elastic_net", features=50)
+    assert len(result[2]) == 1
+    assert 0 <= train_classifier(e, m, "control", "case", model="svm_rbf", features=12)[0]["test_auc"] <= 1
 
 
 def test_mr_harmonization_and_reference():

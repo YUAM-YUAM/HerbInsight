@@ -1,4 +1,17 @@
-"""机器学习教学、固定预测评估与患者划分核对；不训练新模型。"""
+"""机器学习教学、真实限定建模、固定预测评估与患者划分核对。"""
+
+ML_ALGORITHMS = [
+    {"模型": "Logistic Regression", "适合回答": "建立可解释的二分类基线", "优势": "系数方向清楚、速度快、便于复现", "主要局限": "难表达复杂非线性", "平台状态": "可直接运行"},
+    {"模型": "Elastic Net Logistic", "适合回答": "高维特征下做收缩与稀疏建模", "优势": "兼顾L1筛选与L2稳定性", "主要局限": "相关特征的保留结果可能波动", "平台状态": "可直接运行"},
+    {"模型": "Random Forest", "适合回答": "探索非线性及变量交互", "优势": "对尺度不敏感、能描述复杂关系", "主要局限": "小样本易过拟合，重要性可能偏倚", "平台状态": "可直接运行"},
+    {"模型": "RBF-SVM", "适合回答": "比较复杂分类边界是否改善预测", "优势": "高维空间中有较强表达能力", "主要局限": "参数敏感、全局解释较弱", "平台状态": "可直接运行"},
+    {"模型": "XGBoost/LightGBM", "适合回答": "较充分样本下的提升树比较", "优势": "性能与调参空间丰富", "主要局限": "小样本调参很容易产生乐观偏差", "平台状态": "方法拓展，不在本站计算"},
+]
+
+LANGUAGE_ROUTES = [
+    {"路线": "Python", "推荐工具": "pandas + scikit-learn Pipeline", "优势": "网页部署、模型管线和工程复现方便", "局限": "部分经典组学流程不如Bioconductor集中", "适用场景": "平台计算、多模型比较、自动化交付"},
+    {"路线": "R", "推荐工具": "Bioconductor + tidymodels/glmnet", "优势": "统计建模、差异表达和科研绘图生态成熟", "局限": "跨环境部署与依赖管理相对复杂", "适用场景": "组学预处理、统计分析、论文级图表"},
+]
 
 ML_STEPS = [
     ("1. 定义预测任务：预测分组不是证明治疗机制", """先确定预测对象、阳性标签与使用场景。例如用结肠组织表达区分患者/对照，仅能评估这一数据情境下的分组预测，不能说模型预测了复方疗效或适合临床筛查。
@@ -20,15 +33,15 @@ ML_STEPS = [
 **泄漏高风险**：在全部样本上用标签筛差异基因、填补/标准化、筛特征、选模型，然后才随机分训练和测试。正确做法是把需拟合的数据处理、特征选择与模型放进每个训练折内；测试集只应用已学到的变换。
 
 不要用全部发现+验证数据一起做批次校正后再声称验证集完全独立。疾病与批次/队列完全重合时，模型可能学的是来源差别，不是疾病。"""),
-    ("4. 多种工具路线：先做基线，再比较复杂模型", """**Python**：scikit-learn的Pipeline串联适用的缺失处理、StandardScaler、特征选择和LogisticRegression/SVM等；分层或分组交叉验证要与患者结构一致。GroupKFold/StratifiedGroupKFold等的适用性以实际样本和版本为准。
+    ("4. 选模型：每种算法都要有明确角色", """**Python**：scikit-learn的Pipeline串联适用的缺失处理、StandardScaler、特征选择和LogisticRegression/SVM等；分层或分组交叉验证要与患者结构一致。GroupKFold/StratifiedGroupKFold等的适用性以实际样本和版本为准。
 
 **R**：tidymodels或caret组织预处理、重采样与调参；glmnet可做惩罚回归。LASSO在分类时需使用适当的分类模型，不是所有LASSO分数都直接当概率。
 
 **可视化软件**：Orange等适合学习数据导入与训练/评估流程，但数据类型、分组重采样及嵌套特征选择能力必须核对，拖拽流程不自动避免泄漏。
 
-先用简单基线（如合理预处理的逻辑回归）建立参照，再比较SVM、随机森林等。所有模型用相同合法划分，调参仅在训练流程中。样本很少、特征很多时，复杂模型并不自动更可靠。
+先用逻辑回归建立基线，再按研究需要比较Elastic Net、随机森林与SVM。所有模型必须使用相同训练样本、相同交叉验证折和相同指标；调参及特征筛选只发生在训练流程中。样本很少、特征很多时，复杂模型并不自动更可靠。
 
-**本站当前**：本页实际操作区可上传表达和分组，训练逻辑回归或随机森林，执行训练内特征筛选、交叉验证与内部测试评估。不提供自动调参、LASSO/SVM训练或自动外部验证。"""),
+**本站当前**：实际操作区可运行逻辑回归、Elastic Net、随机森林和RBF-SVM。公平比较模式先在训练集交叉验证中选择候选，再用内部保留测试集评估；不提供自动调参、外部验证或临床可用性判断。"""),
     ("5. 报告指标：AUC、阈值和准确率不是一回事", """先定义阳性为1，保存每个测试样本的真实标签和模型阳性分数；概率应说明校准情况，decision score则注明不是概率。
 
 ROC-AUC衡量排序，不依赖某一个分类阈值，但受数据构成和验证设计影响。Accuracy、Sensitivity/Recall、Specificity、Precision、F1及混淆矩阵依赖阈值；阈值应在训练/验证流程中按目的确定，不在最终测试集上挑最优后当作预先指定。
@@ -45,7 +58,7 @@ LASSO系数、随机森林重要性、SHAP等反映模型中贡献，不证明�
 **交付**：完整划分、训练参数、每例预测、性能和限制；不把同一表达数据的差异分析、免疫评分和模型当成多份独立验证。"""),
     ("7. 接回平台：学习、评估与真实建模分开", """先用本页虚构病例练习患者隔离检查，再理解固定预测在不同阈值下的表现。这里的指标由现场计算生成，但没有训练模型，也没有真实疗效证据。
 
-「案例解读→机器学习结果」用于已有文件解读；本课程实际操作区支持逻辑回归、随机森林、训练内特征筛选与交叉验证、内部保留测试集评估。外部验证与复杂患者/批次模型需另行开展。
+「案例解读→机器学习结果」用于已有文件解读；本课程实际操作区支持四类模型的训练内公平比较、特征筛选、交叉验证与内部保留测试。外部验证与复杂患者/批次模型需另行开展。
 
 后续可结合独立的表达、免疫环境或遗传证据，但每一分支有自己的数据前提。完整性不是每个算法都跑一遍，而是任务、数据、模型、评估与解释边界能接得上。"""),
 ]
@@ -108,7 +121,13 @@ def evaluate_binary_predictions(labels, scores, threshold=0.5):
 
 
 def ml_markdown():
-    parts = ["# 机器学习：数据、划分与评估", "本课程不执行真实模型训练；工具界面与版本能力以官方文档为准。"]
+    def table(rows):
+        columns = list(rows[0])
+        return "| " + " | ".join(columns) + " |\n| " + " | ".join(["---"] * len(columns)) + " |\n" + "\n".join(
+            "| " + " | ".join(str(row[column]) for column in columns) + " |" for row in rows)
+    parts = ["# 机器学习：数据、划分与评估", "课程包含规范教学与限定条件下的真实模型训练；内部测试不等于外部或临床验证。"]
+    parts.extend(["## 算法选择表", table(ML_ALGORITHMS),
+                  "## Python与R路线", table(LANGUAGE_ROUTES)])
     for title, body in ML_STEPS:
         parts.extend(["## " + title, body])
     for name, fields in ML_FIELDS.items():
@@ -121,9 +140,15 @@ def render_ml_guide():
     import streamlit as st
 
     st.subheader("机器学习：先防泄漏，再谈模型性能")
-    st.write("先别急着挑模型。我们先把训练与测试样本分开，再看特征怎么筛、指标怎么读。课程下方可以用自己的表达数据训练逻辑回归或随机森林；案例结果和模拟练习会单独标明。")
+    st.write("先别急着追求最高AUC。我们先把训练与测试样本分开，再用同一划分公平比较四类模型。课程下方可以上传自己的表达数据真实计算；案例结果、虚构练习和用户数据始终分开标注。")
     for name, url in [("scikit-learn防泄漏指南", "https://scikit-learn.org/stable/common_pitfalls.html"), ("scikit-learn模型评估", "https://scikit-learn.org/stable/modules/model_evaluation.html"), ("tidymodels", "https://www.tidymodels.org/"), ("Orange", "https://orangedatamining.com/")]:
         st.link_button(name, url)
+    st.subheader("算法不是越多越好：先明确每个模型的角色")
+    st.dataframe(pd.DataFrame(ML_ALGORITHMS), hide_index=True, width="stretch")
+    st.caption("平台真正运行前四类模型；提升树列为拓展方向，不冒充已完成功能。竞赛展示重点是公平比较、证据留痕和边界说明，而不是算法数量。")
+    st.subheader("Python和R都能完成，选择取决于任务")
+    st.dataframe(pd.DataFrame(LANGUAGE_ROUTES), hide_index=True, width="stretch")
+    st.info("同一项目可以用R完成组学预处理，再把规范表达矩阵交给Python平台建模。若要比较两条路线，必须保持样本纳入、标签、数据划分、预处理定义和评价指标一致。")
     for i, (title, body) in enumerate(ML_STEPS):
         with st.expander(title, expanded=i == 0):
             st.markdown(body)
