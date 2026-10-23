@@ -195,127 +195,18 @@ def page_learning_center(cfg, project_id):
 # ---------------------------------------------------------------------------
 def page_project_management(cfg, project_id):
     st.header("项目管理")
-    st.write(
-        "创建新的复方—疾病项目，上传标准化基础数据，"
-        "并检查项目文件是否完整。"
-    )
-
-    created_message = st.session_state.pop(
-        "created_project_message",
-        None,
-    )
-
-    if created_message:
-        st.success(created_message)
+    st.caption("在这里创建学习项目，然后按课程逐步收集、提交和分析资料。")
 
     create_tab, upload_tab, status_tab = st.tabs(
-        [
-            "创建新项目",
-            "上传基础数据",
-            "项目数据状态",
-        ]
+        ["我的学习项目", "归档案例数据维护", "归档案例数据状态"]
     )
-
     with create_tab:
-        st.subheader("创建通用分析项目")
-
-        st.info(
-            "项目编号用于创建文件夹，必须使用英文小写字母、"
-            "数字、下划线或短横线，例如："
-            " gegen_qi_deficiency。"
-        )
-
-        with st.form("create_project_form"):
-            new_project_id = st.text_input(
-                "项目编号",
-                placeholder="例如：gegen_uc",
-            )
-
-            new_project_name = st.text_input(
-                "项目名称",
-                placeholder="例如：葛根芩连汤干预溃疡性结肠炎",
-            )
-
-            formula_name = st.text_input(
-                "复方名称",
-                placeholder="例如：葛根芩连汤",
-            )
-
-            disease_name = st.text_input(
-                "疾病名称",
-                placeholder="例如：溃疡性结肠炎",
-            )
-
-            species = st.selectbox(
-                "研究物种",
-                [
-                    "Homo sapiens",
-                    "Mus musculus",
-                    "Rattus norvegicus",
-                ],
-            )
-
-            create_button = st.form_submit_button(
-                "创建项目",
-                type="primary",
-            )
-
-        if create_button:
-            required_values = {
-                "项目编号": new_project_id,
-                "项目名称": new_project_name,
-                "复方名称": formula_name,
-                "疾病名称": disease_name,
-            }
-
-            empty_fields = [
-                field_name
-                for field_name, field_value
-                in required_values.items()
-                if not str(field_value).strip()
-            ]
-
-            if empty_fields:
-                st.error(
-                    "请填写："
-                    + "、".join(empty_fields)
-                )
-            else:
-                try:
-                    project_dir = (
-                        project_manager.create_project(
-                            project_id=new_project_id,
-                            project_name=new_project_name,
-                            formula_name=formula_name,
-                            disease_name=disease_name,
-                            species=species,
-                        )
-                    )
-
-                    safe_project_id = (
-                        project_manager
-                        .validate_project_id(
-                            new_project_id
-                        )
-                    )
-
-                    st.session_state[
-                        "created_project_message"
-                    ] = (
-                        f"项目 {safe_project_id} 创建成功。"
-                        f"目录：{project_dir}"
-                    )
-
-                    st.rerun()
-
-                except (
-                    ValueError,
-                    FileExistsError,
-                ) as error:
-                    st.error(str(error))
+        from src.study_progress import render_project_creation
+        render_project_creation()
 
     with upload_tab:
-        st.subheader("上传标准化基础数据")
+        st.subheader("归档案例数据维护")
+        st.caption("这里修改服务器上的归档案例，不属于个人学习项目。学习资料请在对应课程的“本节任务”中提交。")
 
         available_projects = list_projects()
 
@@ -6330,12 +6221,12 @@ def main():
     st.sidebar.caption("按任务进入 · 无需切换使用模式")
     with st.sidebar.expander("项目与设置", expanded=False):
         preferred = projects.index("wujisan_uc") if "wujisan_uc" in projects else 0
-        project_id = st.selectbox("当前项目", projects, index=preferred, key="active_project")
-        st.caption("切换项目只改变案例与项目工具的数据，教学课程通用。")
         from src.study_progress import render_project_controls
         render_project_controls()
+        project_id = st.selectbox("参考案例", projects, index=preferred, key="active_project")
+        st.caption("参考案例仅供对照，不改变你的学习项目或进度。")
     cfg = load_project_config(project_id)
-    st.sidebar.caption("当前项目：" + str(cfg.get("project_name", project_id)))
+    st.sidebar.caption("参考案例：" + str(cfg.get("project_name", project_id)))
     for group_name, entries in NAV_GROUPS.items():
         with st.sidebar.expander(group_name, expanded=group_name == group):
             for route_id, title, _, _ in entries:

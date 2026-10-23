@@ -61,7 +61,33 @@ def validate_milestone(upload, section, task, columns):
 def render_project_controls():
     import streamlit as st
     projects = st.session_state.setdefault('study_projects', {})
-    with st.expander('＋ 新建学习项目'):
+    pending = st.session_state.pop('study_pending_selection', None)
+    if pending in projects:
+        st.session_state['study_selected'] = pending
+    if projects:
+        st.selectbox('我的学习项目', list(projects), format_func=lambda x:projects[x]['name'], key='study_selected')
+    else:
+        st.caption('尚未创建学习项目，可先浏览课程与案例。')
+    if st.button('＋ 新建项目', key='open_study_creation', width='stretch'):
+        st.query_params['view'] = 'project_manager'
+        st.rerun()
+
+
+def render_project_creation():
+    import streamlit as st
+    projects = st.session_state.setdefault('study_projects', {})
+    selected = st.session_state.get('study_selected')
+    if selected in projects:
+        project = projects[selected]
+        st.markdown('当前学习项目：**'+project['name']+'**')
+        st.caption(project['formula']+' · '+project['disease'])
+        if st.button('继续学习', key='resume_study'):
+            st.query_params['view'] = 'learn_collection'
+            st.rerun()
+    st.subheader('新建学习项目')
+    st.caption('填写研究主题即可开始，无需设置文件夹或英文编号。')
+    st.caption('项目与提交记录仅保留在当前会话，不写入公共案例；离开前请下载学习进度。进度文件不含原始数据，暂不支持导入恢复。')
+    with st.container():
         with st.form('new_study_project', clear_on_submit=True):
             name = st.text_input('项目名称', max_chars=80)
             formula = st.text_input('复方名称', max_chars=80)
@@ -73,13 +99,10 @@ def render_project_controls():
             else:
                 identifier = 'study_'+uuid4().hex
                 projects[identifier] = {'name':name.strip(),'formula':formula.strip(),'disease':disease.strip()}
-                st.session_state['study_selected'] = identifier
+                st.session_state['study_pending_selection'] = identifier
                 st.session_state['study_just_created'] = True
                 st.query_params['view'] = 'learn_collection'
                 st.rerun()
-    if projects:
-        st.selectbox('我的学习项目', list(projects), format_func=lambda x:projects[x]['name'], key='study_selected')
-        st.caption('学习项目与示范案例分开保存；上传资料仅在当前会话处理，不写入公共案例。离开前下载进度记录，当前版本不提供跨设备恢复。')
 
 
 def render_study_progress(section, project_id):
