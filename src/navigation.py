@@ -1,6 +1,9 @@
 """按任务直接导航；稳定路由用于刷新和收藏，不依赖横向标签页。"""
 
 NAV_GROUPS = {
+    "平台验证": [
+        ("blind_demo", "五积散盲测 DEMO", "平台验证 DEMO", None),
+    ],
     "核心学习与实训": [
         ("learn_home", "学习路线", "网络药理学操作课程", "overview"),
         ("learn_collection", "01 资料检索与ID整理", "网络药理学操作课程", "collection"),

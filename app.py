@@ -198,6 +198,11 @@ def page_project_creation(cfg, project_id):
     render_project_creation()
 
 
+def page_blind_demo(cfg, project_id):
+    from src.blind_demo import render_blind_demo
+    render_blind_demo(os.path.join(PROJECTS_DIR, "wujisan_uc"))
+
+
 def page_project_management(cfg, project_id):
     st.header("项目管理")
     st.caption("在这里创建学习项目，然后按课程逐步收集、提交和分析资料。")
@@ -6153,6 +6158,7 @@ MR 结果还需要结合工具变量强度、异质性、水平多效性
 # 主程序
 # ---------------------------------------------------------------------------
 PAGES = {
+    "平台验证 DEMO": page_blind_demo,
     "教学实训中心": page_learning_center,
     "网络药理学操作课程": page_learning_paths,
     "网络药理学教学实验": page_ppi,
