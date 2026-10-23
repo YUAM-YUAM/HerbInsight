@@ -69,7 +69,7 @@ def render_project_controls():
     else:
         st.caption('尚未创建学习项目，可先浏览课程与案例。')
     if st.button('＋ 新建项目', key='open_study_creation', width='stretch'):
-        st.query_params['view'] = 'project_manager'
+        st.query_params['view'] = 'project_create'
         st.rerun()
 
 
@@ -85,13 +85,24 @@ def render_project_creation():
             st.query_params['view'] = 'learn_collection'
             st.rerun()
     st.subheader('新建学习项目')
-    st.caption('填写研究主题即可开始，无需设置文件夹或英文编号。')
+    st.write('先确定“研究哪一个复方、哪一种疾病”，再逐步补齐资料。现在不需要上传所有文件。')
+    with st.container(border=True):
+        st.markdown('#### 项目填写规范')
+        st.markdown(
+            '- **项目名称**：建议使用“复方名 + 疾病名 + 研究内容”，例如“五积散与溃疡性结肠炎的网络药理学研究”；不要提前写成“证实疗效”。\n'
+            '- **复方名称**：使用完整名称；同名方存在不同组成时，在药材登记中注明出处、组成及加减情况。\n'
+            '- **研究疾病**：使用明确的疾病名称，例如“溃疡性结肠炎”，不要只写“肠炎”；检索时记录英文名称及同义词。\n'
+            '- **研究范围**：本学习流程的药材靶点整理以人类（Homo sapiens）为基准，其他物种需单独核对，不能直接混合。'
+        )
+    st.markdown('#### 创建后准备什么')
+    st.write('第一步整理药材清单与来源：记录药材名称、处方出处或数据库链接。进入课程后下载对应模板，手动收集，再上传检查；无需在这里重复上传。')
+    st.caption('填写项均为必填，最多80个字符；项目编号由平台自动生成。')
     st.caption('项目与提交记录仅保留在当前会话，不写入公共案例；离开前请下载学习进度。进度文件不含原始数据，暂不支持导入恢复。')
     with st.container():
-        with st.form('new_study_project', clear_on_submit=True):
-            name = st.text_input('项目名称', max_chars=80)
-            formula = st.text_input('复方名称', max_chars=80)
-            disease = st.text_input('研究疾病', max_chars=80)
+        with st.form('new_study_project', clear_on_submit=False):
+            name = st.text_input('项目名称', max_chars=80, placeholder='五积散与溃疡性结肠炎的网络药理学研究')
+            formula = st.text_input('复方名称', max_chars=80, placeholder='五积散')
+            disease = st.text_input('研究疾病', max_chars=80, placeholder='溃疡性结肠炎')
             submit = st.form_submit_button('创建并开始')
         if submit:
             if not all(value.strip() for value in (name,formula,disease)):

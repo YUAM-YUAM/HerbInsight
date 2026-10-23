@@ -193,6 +193,11 @@ def page_learning_center(cfg, project_id):
 # ---------------------------------------------------------------------------
 # 页面：项目管理
 # ---------------------------------------------------------------------------
+def page_project_creation(cfg, project_id):
+    from src.study_progress import render_project_creation
+    render_project_creation()
+
+
 def page_project_management(cfg, project_id):
     st.header("项目管理")
     st.caption("在这里创建学习项目，然后按课程逐步收集、提交和分析资料。")
@@ -201,8 +206,10 @@ def page_project_management(cfg, project_id):
         ["我的学习项目", "归档案例数据维护", "归档案例数据状态"]
     )
     with create_tab:
-        from src.study_progress import render_project_creation
-        render_project_creation()
+        st.write("新建项目后，按课程逐步完成资料收集与提交。已有学习项目可在侧栏切换。")
+        if st.button("进入项目创建页", key="manager_open_creation"):
+            st.query_params["view"] = "project_create"
+            st.rerun()
 
     with upload_tab:
         st.subheader("归档案例数据维护")
@@ -6150,6 +6157,7 @@ PAGES = {
     "网络药理学操作课程": page_learning_paths,
     "网络药理学教学实验": page_ppi,
     "项目管理": page_project_management,
+    "新建学习项目": page_project_creation,
     "项目首页": page_home,
     "药材-候选靶点": page_herbs,
     "疾病基因与交集": page_overlap,

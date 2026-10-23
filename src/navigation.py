@@ -38,6 +38,7 @@ NAV_GROUPS = {
 }
 
 ROUTES = {route[0]: (group, *route[1:]) for group, routes in NAV_GROUPS.items() for route in routes}
+ROUTES["project_create"] = ("项目工具", "新建学习项目", "新建学习项目", None)
 DEFAULT_ROUTE = "learn_home"
 COURSE_ORDER = ["learn_home", "learn_collection", "learn_disease", "learn_ppi", "learn_enrichment", "learn_transcriptome", "learn_ml", "learn_immune", "learn_mr", "learn_single_cell", "learn_perturbation", "resources"]
 
